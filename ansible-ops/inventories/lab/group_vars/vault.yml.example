@@ -1,0 +1,5 @@
+---
+# Đổi tên thành vault.yml và mã hóa bằng ansible-vault trước khi sử dụng.
+vault_bmc_username: audit
+vault_bmc_password: change-me
+

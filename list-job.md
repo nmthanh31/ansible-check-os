@@ -1,0 +1,78 @@
+Báo cáo danh sách các job sẽ thực hiện
+Phần OS
+- JOB-OS-01 - Kiểm tra tài nguyên node
+  - Kiểm tra vCPU và mức sử dụng CPU.
+  - Kiểm tra load average.
+  - Kiểm tra RAM khả dụng và đã sử dụng.
+  - Kiểm tra swap.
+  - Kiểm tra dung lượng filesystem.
+  - Kiểm tra inode.
+  - Phát hiện filesystem read-only.
+  - Liệt kê process sử dụng nhiều CPU/RAM.
+- JOB-OS-02 - Kiểm tra event log OS
+  - Thu thập kernel log trong 24 giờ.
+  - Kiểm tra systemd service failed.
+  - Phát hiện I/O và disk error.
+  - Phát hiện filesystem error/read-only.
+  - Phát hiện OOM Killer.
+  - Phát hiện network error/link down.
+  - Phát hiện segmentation fault.
+  - Kiểm tra lỗi containerd/kubelet.
+  - Kiểm tra authentication failure.
+  - Nhóm lỗi trùng theo nguồn và số lần xuất hiện.
+- JOB-OS-03 - Kiểm tra cron job OS
+  - Đọc /etc/crontab.
+  - Đọc /etc/cron.d/.
+  - Kiểm tra cron hourly/daily/weekly/monthly.
+  - Liệt kê user crontab.
+  - Liệt kê systemd timer.
+  - Ghi nhận user, lịch chạy, command và nguồn khai báo.
+- JOB-OS-04 - Kiểm tra SMART
+  - Phát hiện máy vật lý hay VM.
+  - Kiểm tra smartctl đã được cài đặt.
+  - Tìm thiết bị hỗ trợ SMART.
+  - VM không expose SMART thì skipped.
+  - Kiểm tra SMART overall health.
+  - Kiểm tra nhiệt độ ổ đĩa.
+  - Kiểm tra reallocated/pending/uncorrectable sector.
+  - Kiểm tra UDMA CRC error.
+  - Kiểm tra SSD wear level.
+  - Kiểm tra NVMe critical warning/media error.
+  - Đọc self-test log và error log.
+Phần Kubernetes
+- JOB-K8S-01 - Kiểm tra tài nguyên
+  - Kiểm tra trạng thái và condition của node.
+  - Thu thập capacity và allocatable.
+  - Thu thập CPU/RAM usage.
+  - Kiểm tra Disk/Memory/PID Pressure.
+  - Đếm pod trên từng node.
+  - Tổng hợp request/limit theo node.
+  - So sánh request/limit với allocatable.
+  - Tổng hợp tài nguyên theo namespace/workload.
+  - Phát hiện container thiếu request/limit.
+  - Dùng Metrics API nếu có.
+  - Fallback sang SSH và crictl stats nếu không có Metrics Server.
+- JOB-K8S-02 - Kiểm tra event toàn cụm
+  - Thu thập event ở mọi namespace.
+  - Lọc Warning event.
+  - Phát hiện FailedScheduling.
+  - Phát hiện BackOff.
+  - Phát hiện FailedMount/FailedAttachVolume.
+  - Phát hiện Unhealthy/Evicted.
+  - Phát hiện NodeNotReady.
+  - Phát hiện lỗi pull image.
+  - Phát hiện lỗi tạo pod/container/sandbox.
+  - Nhóm event theo namespace, object và reason.
+- JOB-K8S-03 - Kiểm tra và tạo cảnh báo
+  - Cảnh báo node NotReady hoặc Pressure.
+  - Cảnh báo tài nguyên vượt ngưỡng.
+  - Cảnh báo request gần đạt allocatable.
+  - Cảnh báo limit overcommit.
+  - Cảnh báo pod lỗi hoặc Pending lâu.
+  - Cảnh báo workload thiếu replica.
+  - Cảnh báo Warning event lặp lại.
+  - Cảnh báo service không có endpoint.
+  - Cảnh báo PVC/volume lỗi.
+  - Cảnh báo lỗi OS hoặc SMART nghiêm trọng.
+  - Gộp thêm alert từ Prometheus/Alertmanager nếu có.
+  - Vẫn tự tạo cảnh báo khi không có monitoring stack.

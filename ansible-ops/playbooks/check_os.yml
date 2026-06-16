@@ -1,0 +1,11 @@
+---
+- name: Check OS jobs
+  hosts: kubernetes_servers
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: os_checks
+      tags:
+        - os
+        - checks

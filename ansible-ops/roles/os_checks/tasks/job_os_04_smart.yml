@@ -1,0 +1,20 @@
+---
+# JOB-OS-04 - Kiểm tra SMART.
+# Điều kiện:
+# - Nếu là máy vật lý, kiểm tra SMART khi smartctl tồn tại.
+# - Nếu là VM, chỉ kiểm tra khi disk/controller passthrough hoặc SMART được expose.
+# - Nếu VM không expose SMART, trả skipped: SMART data is not exposed to the VM.
+# Tasks cần triển khai:
+# - Phát hiện máy vật lý hay VM.
+# - Kiểm tra smartctl đã được cài đặt.
+# - Tìm thiết bị hỗ trợ SMART.
+# - VM không expose SMART thì skipped.
+# - Kiểm tra SMART overall health.
+# - Kiểm tra nhiệt độ ổ đĩa.
+# - Kiểm tra reallocated/pending/uncorrectable sector.
+# - Kiểm tra UDMA CRC error.
+# - Kiểm tra SSD wear level.
+# - Kiểm tra NVMe critical warning/media error.
+# - Đọc self-test log và error log.
+- name: JOB-OS-04 | Placeholder until SMART checks are implemented
+  ansible.builtin.meta: noop

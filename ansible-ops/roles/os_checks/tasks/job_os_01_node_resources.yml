@@ -1,0 +1,79 @@
+---
+# JOB-OS-01 - Kiểm tra tài nguyên node.
+# Tasks cần triển khai:
+# - Kiểm tra vCPU và mức sử dụng CPU.
+# - Kiểm tra load average.
+# - Kiểm tra RAM khả dụng và đã sử dụng.
+# - Kiểm tra swap.
+# - Kiểm tra dung lượng filesystem.
+# - Kiểm tra inode.
+# - Phát hiện filesystem read-only.
+# - Liệt kê process sử dụng nhiều CPU/RAM.
+- name: JOB-OS-01 | Initialize result lists
+  ansible.builtin.set_fact:
+    os_node_resource_findings: []
+    os_node_resource_raw: {}
+  changed_when: false
+
+- name: JOB-OS-01 | Read CPU count
+  ansible.builtin.command: nproc
+  register: os_cpu_count
+  changed_when: false
+
+- name: JOB-OS-01 | Read load average
+  ansible.builtin.command: cat /proc/loadavg
+  register: os_loadavg
+  changed_when: false
+
+- name: JOB-OS-01 | Read memory and swap
+  ansible.builtin.command: free -m
+  register: os_memory
+  changed_when: false
+
+- name: JOB-OS-01 | Read filesystem usage
+  ansible.builtin.command: df -PTh
+  register: os_filesystems
+  changed_when: false
+
+- name: JOB-OS-01 | Read inode usage
+  ansible.builtin.command: df -Pi
+  register: os_inodes
+  changed_when: false
+
+- name: JOB-OS-01 | Detect read-only filesystems
+  ansible.builtin.shell: |
+    findmnt -rn -o TARGET,OPTIONS | awk '$2 ~ /(^|,)ro(,|$)/ {print $0}'
+  args:
+    executable: /bin/bash
+  register: os_readonly_filesystems
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-01 | Read top CPU processes
+  ansible.builtin.shell: |
+    ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | head -n {{ os_check_top_process_count + 1 }}
+  args:
+    executable: /bin/bash
+  register: os_top_cpu_processes
+  changed_when: false
+
+- name: JOB-OS-01 | Read top memory processes
+  ansible.builtin.shell: |
+    ps -eo pid,user,comm,%cpu,%mem --sort=-%mem | head -n {{ os_check_top_process_count + 1 }}
+  args:
+    executable: /bin/bash
+  register: os_top_memory_processes
+  changed_when: false
+
+- name: JOB-OS-01 | Save raw node resource result
+  ansible.builtin.set_fact:
+    os_node_resource_raw:
+      cpu_count: "{{ os_cpu_count.stdout }}"
+      loadavg: "{{ os_loadavg.stdout }}"
+      memory: "{{ os_memory.stdout_lines }}"
+      filesystems: "{{ os_filesystems.stdout_lines }}"
+      inodes: "{{ os_inodes.stdout_lines }}"
+      read_only_filesystems: "{{ os_readonly_filesystems.stdout_lines }}"
+      top_cpu_processes: "{{ os_top_cpu_processes.stdout_lines }}"
+      top_memory_processes: "{{ os_top_memory_processes.stdout_lines }}"
+  changed_when: false

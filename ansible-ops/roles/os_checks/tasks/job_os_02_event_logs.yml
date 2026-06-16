@@ -1,0 +1,51 @@
+---
+# JOB-OS-02 - Kiểm tra event log OS.
+# Tasks cần triển khai:
+# - Thu thập kernel log trong 24 giờ.
+# - Kiểm tra systemd service failed.
+# - Phát hiện I/O và disk error.
+# - Phát hiện filesystem error/read-only.
+# - Phát hiện OOM Killer.
+# - Phát hiện network error/link down.
+# - Phát hiện segmentation fault.
+# - Kiểm tra lỗi containerd/kubelet.
+# - Kiểm tra authentication failure.
+# - Nhóm lỗi trùng theo nguồn và số lần xuất hiện.
+- name: JOB-OS-02 | Initialize event log result
+  ansible.builtin.set_fact:
+    os_event_log_raw: {}
+    os_event_log_findings: []
+  changed_when: false
+
+- name: JOB-OS-02 | Read kernel errors
+  ansible.builtin.command:
+    cmd: journalctl -k --since "{{ os_check_log_since }}" --priority=warning..alert --no-pager
+  register: os_kernel_errors
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-02 | Read failed systemd services
+  ansible.builtin.command:
+    cmd: systemctl --failed --no-pager --plain
+  register: os_failed_services
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-02 | Read OS error patterns
+  ansible.builtin.shell: |
+    journalctl --since "{{ os_check_log_since }}" --no-pager \
+      | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet' \
+      || true
+  args:
+    executable: /bin/bash
+  register: os_error_patterns
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-02 | Save raw event log result
+  ansible.builtin.set_fact:
+    os_event_log_raw:
+      kernel_errors: "{{ os_kernel_errors.stdout_lines }}"
+      failed_services: "{{ os_failed_services.stdout_lines }}"
+      error_patterns: "{{ os_error_patterns.stdout_lines }}"
+  changed_when: false

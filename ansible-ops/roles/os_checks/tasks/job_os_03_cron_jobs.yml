@@ -1,0 +1,11 @@
+---
+# JOB-OS-03 - Kiểm tra cron job OS.
+# Tasks cần triển khai:
+# - Đọc /etc/crontab.
+# - Đọc /etc/cron.d/.
+# - Kiểm tra cron hourly/daily/weekly/monthly.
+# - Liệt kê user crontab.
+# - Liệt kê systemd timer.
+# - Ghi nhận user, lịch chạy, command và nguồn khai báo.
+- name: JOB-OS-03 | Placeholder until cron job checks are implemented
+  ansible.builtin.meta: noop

@@ -1,0 +1,19 @@
+---
+os_check_log_since: "24 hours ago"
+# The number of top processes to check for CPU and memory usage
+os_check_top_process_count: 10
+# Thresholds for CPU usage
+os_check_cpu_warning_percent: 80
+os_check_cpu_critical_percent: 90
+# Thresholds for memory usage
+os_check_memory_warning_percent: 80
+os_check_memory_critical_percent: 90
+# Thresholds for swap usage
+os_check_swap_warning_percent: 20
+os_check_swap_critical_percent: 50
+# Thresholds for disk usage
+os_check_disk_warning_percent: 80
+os_check_disk_critical_percent: 90
+# Thresholds for inode usage
+os_check_inode_warning_percent: 80
+os_check_inode_critical_percent: 90

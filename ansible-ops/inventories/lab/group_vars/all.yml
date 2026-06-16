@@ -1,0 +1,10 @@
+---
+# Khai báo credential trong Ansible Vault hoặc secret manager.
+# Không ghi giá trị thật trực tiếp vào file này.
+#
+# Tạo file Vault:
+#   ansible-vault create inventories/lab/group_vars/vault.yml
+#
+# Nội dung vault.yml:
+#   vault_bmc_username: audit
+#   vault_bmc_password: change-me
