@@ -1,0 +1,180 @@
+{
+    "host": "cp01",
+    "job_results": {
+        "JOB-OS-01": {
+            "findings": [],
+            "resources": {
+                "cpu_count": "8",
+                "filesystems": [
+                    "Filesystem                        Type     Size  Used Avail Use% Mounted on",
+                    "tmpfs                             tmpfs    790M  3.2M  787M   1% /run",
+                    "/dev/mapper/ubuntu--vg-ubuntu--lv ext4     195G   70G  116G  38% /",
+                    "tmpfs                             tmpfs    3.9G     0  3.9G   0% /dev/shm",
+                    "tmpfs                             tmpfs    5.0M     0  5.0M   0% /run/lock",
+                    "/dev/sda2                         ext4     2.0G  517M  1.3G  29% /boot",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/7109a9f9e2bbfd4775fae97c0799104ee6157c82b3c3492408dacc01818eba7b/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7109a9f9e2bbfd4775fae97c0799104ee6157c82b3c3492408dacc01818eba7b/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/d07ad63f4000ca924aca93935b6a95b2181b16cccd6cf109b8891b848e257925/rootfs",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/962cdb92f4fdea638124390b0f6179e852872e75617346392d66aa1fd4159f36/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/962cdb92f4fdea638124390b0f6179e852872e75617346392d66aa1fd4159f36/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7f911c8cbc54f2b09a940444f42e9f3be0d6630887f8341032f074361c52b747/rootfs",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/081671796658d2af0b82143b06a9ae39e112f59d1a394a1941cdb5ca1f5cbe3a/shm",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/4fb474d9a14da92a5c7f4ffac94f1b501327711da9a7303f2b6501d51fccb0c5/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/081671796658d2af0b82143b06a9ae39e112f59d1a394a1941cdb5ca1f5cbe3a/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4fb474d9a14da92a5c7f4ffac94f1b501327711da9a7303f2b6501d51fccb0c5/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ae3b257406a7b8eae7c5ce172d8f0151bf7f55c138f4ea2884f9d350e9f4c320/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/3212ca056c12e614be5804a29270de54863cc5fe8af63593ed11c39973bf6b10/rootfs",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/b84f1a89a7bee3814de186ea4d8ce9f9c990e54f4079576c8339096c2974e765/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/b84f1a89a7bee3814de186ea4d8ce9f9c990e54f4079576c8339096c2974e765/rootfs",
+                    "tmpfs                             tmpfs    7.8G   12K  7.8G   1% /var/lib/kubelet/pods/952e761d-875d-4ab9-a8d9-3d728a79f6cf/volumes/kubernetes.io~projected/kube-api-access-gxsgm",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/75d379a196c9e886643951914f36c867fbde72140d81b21c1e74e9fb145db1e4/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/75d379a196c9e886643951914f36c867fbde72140d81b21c1e74e9fb145db1e4/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bee5edf7d9b50a3f2174444be2d884db2d730a6e1cde002034e9cfc013b24459/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/adf994cffedf1352a8c4edf3cff32390faeff379f37899772cebfd83399de585/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/21d4cd7931fe297c71dd85ad87e7739dc9cc90ec94b94b0a5126e69ac0f01530/rootfs",
+                    "tmpfs                             tmpfs    7.8G   12K  7.8G   1% /var/lib/kubelet/pods/f0912361-0153-4215-b6b2-9c1b076fe6ef/volumes/kubernetes.io~projected/kube-api-access-jw88l",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a11f4feec4fe2f4a00be71a592db83a07331b5f0cffc01528e696e7c03f55ecc/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a11f4feec4fe2f4a00be71a592db83a07331b5f0cffc01528e696e7c03f55ecc/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/d90f7b46b691ece59b134d3817c6c10ed0c4e16d6101980a19e22a484f577afb/rootfs",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/9d6839e127156b76982082217810dff4ec033166ee19a51eb09e6de29e2374dd/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/9d6839e127156b76982082217810dff4ec033166ee19a51eb09e6de29e2374dd/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/2b90481e4af9204183ce12285a7c194119941cbee181543a89fbeb1e9c99044a/rootfs",
+                    "shm                               tmpfs     64M     0   64M   0% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/f3829d6d4f5318df1de28b38233aa412e03a510a24afe87f564b15971bc1412d/shm",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/f3829d6d4f5318df1de28b38233aa412e03a510a24afe87f564b15971bc1412d/rootfs",
+                    "overlay                           overlay  195G   70G  116G  38% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bfbe091df32879a57f5519fa0d9a26bb88d39b7f5af961cd0bfb8225801f1d30/rootfs",
+                    "tmpfs                             tmpfs    790M  4.0K  790M   1% /run/user/1000"
+                ],
+                "inodes": [
+                    "Filesystem                          Inodes  IUsed    IFree IUse% Mounted on",
+                    "tmpfs                              1010486   1449  1009037    1% /run",
+                    "/dev/mapper/ubuntu--vg-ubuntu--lv 12976128 425785 12550343    4% /",
+                    "tmpfs                              1010486      1  1010485    1% /dev/shm",
+                    "tmpfs                              1010486      3  1010483    1% /run/lock",
+                    "/dev/sda2                           131072    324   130748    1% /boot",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/7109a9f9e2bbfd4775fae97c0799104ee6157c82b3c3492408dacc01818eba7b/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7109a9f9e2bbfd4775fae97c0799104ee6157c82b3c3492408dacc01818eba7b/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/d07ad63f4000ca924aca93935b6a95b2181b16cccd6cf109b8891b848e257925/rootfs",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/962cdb92f4fdea638124390b0f6179e852872e75617346392d66aa1fd4159f36/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/962cdb92f4fdea638124390b0f6179e852872e75617346392d66aa1fd4159f36/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/7f911c8cbc54f2b09a940444f42e9f3be0d6630887f8341032f074361c52b747/rootfs",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/081671796658d2af0b82143b06a9ae39e112f59d1a394a1941cdb5ca1f5cbe3a/shm",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/4fb474d9a14da92a5c7f4ffac94f1b501327711da9a7303f2b6501d51fccb0c5/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/081671796658d2af0b82143b06a9ae39e112f59d1a394a1941cdb5ca1f5cbe3a/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/4fb474d9a14da92a5c7f4ffac94f1b501327711da9a7303f2b6501d51fccb0c5/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/ae3b257406a7b8eae7c5ce172d8f0151bf7f55c138f4ea2884f9d350e9f4c320/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/3212ca056c12e614be5804a29270de54863cc5fe8af63593ed11c39973bf6b10/rootfs",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/b84f1a89a7bee3814de186ea4d8ce9f9c990e54f4079576c8339096c2974e765/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/b84f1a89a7bee3814de186ea4d8ce9f9c990e54f4079576c8339096c2974e765/rootfs",
+                    "tmpfs                              1010486      9  1010477    1% /var/lib/kubelet/pods/952e761d-875d-4ab9-a8d9-3d728a79f6cf/volumes/kubernetes.io~projected/kube-api-access-gxsgm",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/75d379a196c9e886643951914f36c867fbde72140d81b21c1e74e9fb145db1e4/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/75d379a196c9e886643951914f36c867fbde72140d81b21c1e74e9fb145db1e4/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bee5edf7d9b50a3f2174444be2d884db2d730a6e1cde002034e9cfc013b24459/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/adf994cffedf1352a8c4edf3cff32390faeff379f37899772cebfd83399de585/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/21d4cd7931fe297c71dd85ad87e7739dc9cc90ec94b94b0a5126e69ac0f01530/rootfs",
+                    "tmpfs                              1010486      9  1010477    1% /var/lib/kubelet/pods/f0912361-0153-4215-b6b2-9c1b076fe6ef/volumes/kubernetes.io~projected/kube-api-access-jw88l",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/a11f4feec4fe2f4a00be71a592db83a07331b5f0cffc01528e696e7c03f55ecc/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/a11f4feec4fe2f4a00be71a592db83a07331b5f0cffc01528e696e7c03f55ecc/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/d90f7b46b691ece59b134d3817c6c10ed0c4e16d6101980a19e22a484f577afb/rootfs",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/9d6839e127156b76982082217810dff4ec033166ee19a51eb09e6de29e2374dd/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/9d6839e127156b76982082217810dff4ec033166ee19a51eb09e6de29e2374dd/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/2b90481e4af9204183ce12285a7c194119941cbee181543a89fbeb1e9c99044a/rootfs",
+                    "shm                                1010486      1  1010485    1% /run/k3s/containerd/io.containerd.grpc.v1.cri/sandboxes/f3829d6d4f5318df1de28b38233aa412e03a510a24afe87f564b15971bc1412d/shm",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/f3829d6d4f5318df1de28b38233aa412e03a510a24afe87f564b15971bc1412d/rootfs",
+                    "overlay                           12976128 425785 12550343    4% /run/k3s/containerd/io.containerd.runtime.v2.task/k8s.io/bfbe091df32879a57f5519fa0d9a26bb88d39b7f5af961cd0bfb8225801f1d30/rootfs",
+                    "tmpfs                               202097     25   202072    1% /run/user/1000"
+                ],
+                "loadavg": "0.43 0.55 0.67 2/712 3083411",
+                "memory": [
+                    "               total        used        free      shared  buff/cache   available",
+                    "Mem:            7894        4405         434           3        3054        3169",
+                    "Swap:              0           0           0"
+                ],
+                "read_only_filesystems": [
+                    "/run/credentials/systemd-sysusers.service ro,nosuid,nodev,noexec,relatime,mode=700",
+                    "/snap/core20/2769 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/lxd/38469 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/lxd/38800 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/snapd/26865 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/snapd/26382 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/core24/1587 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/core24/1643 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/core20/2866 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/helm/515 ro,nodev,relatime,errors=continue,threads=single",
+                    "/snap/helm/517 ro,nodev,relatime,errors=continue,threads=single"
+                ],
+                "top_cpu_processes": [
+                    "    PID USER     COMMAND         %CPU %MEM",
+                    "   3774 root     kube-apiserver  18.7 36.2",
+                    "   3650 root     etcd            10.9  3.8",
+                    "1911389 root     kubelet          3.9  1.0",
+                    "   4011 root     kube-controller  3.5  3.3",
+                    "3083310 setup    sshd             2.3  0.1",
+                    "3083245 setup    systemd          2.2  0.1",
+                    "   5976 root     calico-node      1.8  1.2",
+                    "3083242 root     sshd             1.7  0.1",
+                    "1910026 root     containerd       1.2  0.7",
+                    "1910008 root     rke2             1.0  2.8"
+                ],
+                "top_memory_processes": [
+                    "    PID USER     COMMAND         %CPU %MEM",
+                    "   3774 root     kube-apiserver  18.7 36.2",
+                    "   3650 root     etcd            10.9  3.8",
+                    "   4011 root     kube-controller  3.5  3.3",
+                    "1910008 root     rke2             1.0  2.8",
+                    "   5976 root     calico-node      1.8  1.2",
+                    "1911389 root     kubelet          3.9  1.0",
+                    "   5977 root     calico-node      0.0  0.9",
+                    "   4003 root     kube-scheduler   0.8  0.9",
+                    "   5979 root     calico-node      0.0  0.9",
+                    "   5975 root     calico-node      0.0  0.8"
+                ]
+            }
+        },
+        "JOB-OS-02": {
+            "event_logs": {
+                "error_patterns": [
+                    "Jun 16 16:58:45 Kubernetes-cp01 python3.10[2112647]: ansible-ansible.legacy.command Invoked with _raw_params=journalctl --since \"24 hours ago\" --no-pager  | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet'  || true",
+                    "Jun 16 16:59:18 Kubernetes-cp01 python3.10[2113469]: ansible-ansible.legacy.command Invoked with _raw_params=journalctl --since \"24 hours ago\" --no-pager  | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet'  || true",
+                    "Jun 17 09:07:39 Kubernetes-cp01 sshd[2976440]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=172.16.10.114  user=setup",
+                    "Jun 17 09:10:33 Kubernetes-cp01 python3.10[2979472]: ansible-ansible.legacy.command Invoked with _raw_params=journalctl --since \"24 hours ago\" --no-pager  | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet'  || true",
+                    "                                                     # - I/O error, disk error: l\u1ed7i \u0111\u1ecdc/ghi disk.",
+                    "                                                     # - filesystem error, read-only file system: l\u1ed7i filesystem ho\u1eb7c b\u1ecb remount ro.",
+                    "                                                     # - oom-killer: kernel kill process do thi\u1ebfu RAM.",
+                    "                                                     # - segfault: process crash do segmentation fault.",
+                    "                                                     # - link is down: network link down.",
+                    "                                                     # - authentication failure: l\u1ed7i \u0111\u0103ng nh\u1eadp/x\u00e1c th\u1ef1c.",
+                    "                                                     # - containerd, kubelet: l\u1ed7i runtime/Kubernetes node agent.",
+                    "                                                     journalctl --since \"24 hours ago\" --no-pager  | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet'  || true",
+                    "                                                     # - I/O error, disk error: l\u1ed7i \u0111\u1ecdc/ghi disk.",
+                    "                                                     # - filesystem error, read-only file system: l\u1ed7i filesystem ho\u1eb7c b\u1ecb remount ro.",
+                    "                                                     # - oom-killer: kernel kill process do thi\u1ebfu RAM.",
+                    "                                                     # - segfault: process crash do segmentation fault.",
+                    "                                                     # - link is down: network link down.",
+                    "                                                     # - authentication failure: l\u1ed7i \u0111\u0103ng nh\u1eadp/x\u00e1c th\u1ef1c.",
+                    "                                                     # - containerd, kubelet: l\u1ed7i runtime/Kubernetes node agent.",
+                    "                                                     journalctl --since \"24 hours ago\" --no-pager  | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet'  || true"
+                ],
+                "error_patterns_stderr": [],
+                "failed_services": [
+                    "UNIT LOAD ACTIVE SUB DESCRIPTION",
+                    "0 loaded units listed."
+                ],
+                "failed_services_stderr": [],
+                "kernel_errors": [
+                    "-- No entries --"
+                ],
+                "kernel_errors_stderr": []
+            },
+            "findings": []
+        },
+        "JOB-OS-03": {
+            "cron_jobs": {},
+            "findings": []
+        },
+        "JOB-OS-04": {
+            "findings": [],
+            "skipped": [],
+            "smart": {}
+        }
+    }
+}

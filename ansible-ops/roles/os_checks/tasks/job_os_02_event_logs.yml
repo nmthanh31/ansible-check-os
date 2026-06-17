@@ -1,42 +1,90 @@
 ---
 # JOB-OS-02 - Kiểm tra event log OS.
-# Tasks cần triển khai:
-# - Thu thập kernel log trong 24 giờ.
-# - Kiểm tra systemd service failed.
-# - Phát hiện I/O và disk error.
-# - Phát hiện filesystem error/read-only.
-# - Phát hiện OOM Killer.
-# - Phát hiện network error/link down.
-# - Phát hiện segmentation fault.
-# - Kiểm tra lỗi containerd/kubelet.
-# - Kiểm tra authentication failure.
-# - Nhóm lỗi trùng theo nguồn và số lần xuất hiện.
+#
+# File này đọc log hệ điều hành để phát hiện lỗi kernel, service, disk,
+# filesystem, network, OOM, containerd/kubelet và authentication.
+# Các task chỉ đọc log, không sửa cấu hình.
+
 - name: JOB-OS-02 | Initialize event log result
   ansible.builtin.set_fact:
+    # os_event_log_raw lưu dữ liệu log thô.
     os_event_log_raw: {}
+
+    # os_event_log_findings sau này dùng để lưu warning/critical đã parse.
     os_event_log_findings: []
   changed_when: false
 
 - name: JOB-OS-02 | Read kernel errors
   ansible.builtin.command:
+    # journalctl:
+    # - Công cụ đọc systemd journal.
+    #
+    # -k:
+    # - Chỉ đọc kernel messages, tương đương log từ kernel ring buffer.
+    #
+    # --since "{{ os_check_log_since }}":
+    # - Chỉ lấy log từ mốc thời gian cấu hình.
+    # - Mặc định biến này đang là "24 hours ago" trong defaults/main.yml.
+    #
+    # --priority=warning..alert:
+    # - Lọc severity từ warning đến alert.
+    # - Giảm nhiễu so với đọc toàn bộ kernel log.
+    #
+    # --no-pager:
+    # - Không mở pager như less, tránh task bị treo khi chạy non-interactive.
     cmd: journalctl -k --since "{{ os_check_log_since }}" --priority=warning..alert --no-pager
   register: os_kernel_errors
   changed_when: false
+
+  # Một số hệ tối giản có thể không có journal hoặc không có quyền đọc đầy đủ.
+  # Lỗi này không nên làm chết toàn bộ job; raw sẽ ghi stdout/stderr để xử lý sau.
   failed_when: false
 
 - name: JOB-OS-02 | Read failed systemd services
   ansible.builtin.command:
+    # systemctl --failed:
+    # - Liệt kê unit systemd đang ở trạng thái failed.
+    #
+    # --no-pager:
+    # - Không mở pager, tránh bị đứng terminal.
+    #
+    # --plain:
+    # - Output đơn giản hơn, không có ký tự trang trí.
     cmd: systemctl --failed --no-pager --plain
   register: os_failed_services
   changed_when: false
+
+  # systemctl có thể trả rc khác 0 khi không có unit failed hoặc môi trường
+  # systemd không đầy đủ. Không fail playbook ở bước thu thập.
   failed_when: false
 
 - name: JOB-OS-02 | Read OS error patterns
   ansible.builtin.shell: |
+    # journalctl --since "{{ os_check_log_since }}" --no-pager:
+    # - Đọc toàn bộ journal trong khoảng thời gian cấu hình.
+    # - Không dùng -k vì cần cả log service/application.
+    #
+    # grep -Ei:
+    # - -E dùng extended regex.
+    # - -i không phân biệt hoa thường.
+    #
+    # Các pattern:
+    # - I/O error, disk error: lỗi đọc/ghi disk.
+    # - filesystem error, read-only file system: lỗi filesystem hoặc bị remount ro.
+    # - oom-killer: kernel kill process do thiếu RAM.
+    # - segfault: process crash do segmentation fault.
+    # - link is down: network link down.
+    # - authentication failure: lỗi đăng nhập/xác thực.
+    # - containerd, kubelet: lỗi runtime/Kubernetes node agent.
+    #
+    # || true:
+    # - grep trả rc=1 khi không match dòng nào.
+    # - Thêm || true để "không tìm thấy lỗi" vẫn là kết quả ok.
     journalctl --since "{{ os_check_log_since }}" --no-pager \
       | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet' \
       || true
   args:
+    # Cần shell vì có pipe và toán tử ||.
     executable: /bin/bash
   register: os_error_patterns
   changed_when: false
@@ -45,7 +93,13 @@
 - name: JOB-OS-02 | Save raw event log result
   ansible.builtin.set_fact:
     os_event_log_raw:
+      # stdout_lines giúp downstream xử lý theo từng dòng log.
       kernel_errors: "{{ os_kernel_errors.stdout_lines }}"
       failed_services: "{{ os_failed_services.stdout_lines }}"
       error_patterns: "{{ os_error_patterns.stdout_lines }}"
+
+      # stderr_lines giữ lại lỗi đọc log nếu có, ví dụ thiếu quyền hoặc journal lỗi.
+      kernel_errors_stderr: "{{ os_kernel_errors.stderr_lines | default([]) }}"
+      failed_services_stderr: "{{ os_failed_services.stderr_lines | default([]) }}"
+      error_patterns_stderr: "{{ os_error_patterns.stderr_lines | default([]) }}"
   changed_when: false

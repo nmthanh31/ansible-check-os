@@ -22,3 +22,9 @@
   tags:
     - job_os_04
     - os_smart
+
+- name: Save OS check report
+  ansible.builtin.import_tasks: save_report.yml
+  tags:
+    - always
+    - os_report

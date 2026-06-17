@@ -1,11 +1,157 @@
 ---
 # JOB-OS-03 - Kiểm tra cron job OS.
-# Tasks cần triển khai:
-# - Đọc /etc/crontab.
-# - Đọc /etc/cron.d/.
-# - Kiểm tra cron hourly/daily/weekly/monthly.
-# - Liệt kê user crontab.
-# - Liệt kê systemd timer.
-# - Ghi nhận user, lịch chạy, command và nguồn khai báo.
-- name: JOB-OS-03 | Placeholder until cron job checks are implemented
-  ansible.builtin.meta: noop
+#
+# File này kiểm kê các tác vụ định kỳ trên node:
+# - Cron hệ thống trong /etc/crontab.
+# - Cron fragment trong /etc/cron.d/.
+# - Script định kỳ trong /etc/cron.hourly, daily, weekly, monthly.
+# - User crontab.
+# - Systemd timer.
+#
+# Job này chỉ đọc dữ liệu, không sửa hoặc xóa cron job.
+
+- name: JOB-OS-03 | Initialize cron job result
+  ansible.builtin.set_fact:
+    # os_cron_jobs_raw lưu dữ liệu thô để báo cáo hoặc debug.
+    os_cron_jobs_raw: {}
+
+    # os_cron_jobs_findings sau này có thể dùng để lưu finding nếu cần
+    # phát hiện cron bất thường.
+    os_cron_jobs_findings: []
+  changed_when: false
+
+- name: JOB-OS-03 | Read /etc/crontab
+  ansible.builtin.command:
+    # cat /etc/crontab:
+    # - Đọc file crontab hệ thống.
+    # - File này thường chứa các job có format:
+    #   minute hour day month weekday user command
+    cmd: cat /etc/crontab
+  register: os_system_crontab
+  changed_when: false
+
+  # Một số OS/container có thể không có /etc/crontab.
+  # Không fail job nếu file không tồn tại.
+  failed_when: false
+
+- name: JOB-OS-03 | Find files in /etc/cron.d
+  # ansible.builtin.find:
+  # - Module Ansible dùng để tìm file trên remote host.
+  # - An toàn và dễ parse hơn dùng lệnh ls.
+  ansible.builtin.find:
+    # paths: thư mục cần tìm.
+    paths: /etc/cron.d
+
+    # file_type: file chỉ lấy file thường, bỏ qua directory.
+    file_type: file
+  register: os_cron_d_files
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-03 | Read /etc/cron.d files
+  ansible.builtin.command:
+    # cat {{ item.path }}:
+    # - Đọc từng file cron fragment trong /etc/cron.d.
+    # - item.path lấy từ kết quả module find ở task trước.
+    cmd: cat {{ item.path }}
+
+  # loop chạy task một lần cho mỗi file tìm được.
+  loop: "{{ os_cron_d_files.files | default([]) }}"
+  register: os_cron_d_content
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-03 | List periodic cron scripts
+  ansible.builtin.shell: |
+    # Các thư mục cron định kỳ chuẩn:
+    # - /etc/cron.hourly: chạy theo giờ.
+    # - /etc/cron.daily: chạy hằng ngày.
+    # - /etc/cron.weekly: chạy hằng tuần.
+    # - /etc/cron.monthly: chạy hằng tháng.
+    #
+    # for d in ...:
+    # - Lặp qua từng thư mục.
+    #
+    # [ -d "$d" ]:
+    # - Chỉ xử lý nếu thư mục tồn tại.
+    #
+    # find "$d" -maxdepth 1 -type f -printf '%p\n':
+    # - Tìm file script ngay trong thư mục đó.
+    # - -maxdepth 1 không đi sâu vào thư mục con.
+    # - -type f chỉ lấy file thường.
+    # - -printf '%p\n' in full path của file.
+    for d in /etc/cron.hourly /etc/cron.daily /etc/cron.weekly /etc/cron.monthly; do
+      [ -d "$d" ] && find "$d" -maxdepth 1 -type f -printf '%p\n'
+    done
+  args:
+    # Cần shell vì dùng vòng lặp for, test [ -d ] và toán tử &&.
+    executable: /bin/bash
+  register: os_periodic_cron_files
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-03 | Read /etc/passwd users
+  ansible.builtin.command:
+    # getent passwd:
+    # - Đọc danh sách user từ NSS.
+    # - Bao gồm local /etc/passwd và nguồn khác nếu hệ thống cấu hình.
+    # - Dùng để biết user nào có thể có crontab riêng.
+    cmd: getent passwd
+  register: os_passwd_users
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-03 | Read user crontabs
+  ansible.builtin.command:
+    # crontab -u USER -l:
+    # - -u chỉ định user cần đọc crontab.
+    # - -l liệt kê crontab của user đó.
+    #
+    # item.split(':')[0]:
+    # - Mỗi dòng getent passwd có format user:x:uid:gid:...
+    # - split(':')[0] lấy username.
+    cmd: crontab -u {{ item.split(':')[0] }} -l
+  loop: "{{ os_passwd_users.stdout_lines | default([]) }}"
+  register: os_user_crontabs
+  changed_when: false
+
+  # crontab trả rc=1 khi user không có crontab.
+  # Đây là trạng thái bình thường, không phải lỗi của job.
+  failed_when: false
+
+- name: JOB-OS-03 | Read systemd timers
+  ansible.builtin.command:
+    # systemctl list-timers:
+    # - Liệt kê các timer của systemd.
+    # - Nhiều tác vụ định kỳ hiện đại dùng systemd timer thay vì cron.
+    #
+    # --all:
+    # - Hiển thị cả timer inactive.
+    #
+    # --no-pager:
+    # - Không mở pager như less, tránh task bị treo.
+    #
+    # --plain:
+    # - Output đơn giản, ít ký tự trang trí.
+    cmd: systemctl list-timers --all --no-pager --plain
+  register: os_systemd_timers
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-03 | Save raw cron job result
+  ansible.builtin.set_fact:
+    os_cron_jobs_raw:
+      system_crontab: "{{ os_system_crontab.stdout_lines | default([]) }}"
+      system_crontab_stderr: "{{ os_system_crontab.stderr_lines | default([]) }}"
+
+      cron_d_files: "{{ os_cron_d_files.files | default([]) }}"
+      cron_d_content: "{{ os_cron_d_content.results | default([]) }}"
+
+      periodic_cron_files: "{{ os_periodic_cron_files.stdout_lines | default([]) }}"
+
+      passwd_users: "{{ os_passwd_users.stdout_lines | default([]) }}"
+      user_crontabs: "{{ os_user_crontabs.results | default([]) }}"
+
+      systemd_timers: "{{ os_systemd_timers.stdout_lines | default([]) }}"
+      systemd_timers_stderr: "{{ os_systemd_timers.stderr_lines | default([]) }}"
+  changed_when: false

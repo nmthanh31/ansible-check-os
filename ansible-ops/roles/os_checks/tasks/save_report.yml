@@ -1,0 +1,50 @@
+---
+# Ghi báo cáo JSON về máy control, không ghi lên các node đang kiểm tra.
+# Vì playbook đang become: true trên remote host, các task localhost phải đặt
+# become: false để không cần sudo ở máy control.
+
+- name: OS report | Ensure artifact directory exists on control node
+  ansible.builtin.file:
+    # os_check_artifact_dir mặc định là "{{ playbook_dir }}/../artifacts".
+    # Khi chạy từ playbooks/check_os.yml, thư mục này là ansible-ops/artifacts.
+    path: "{{ os_check_artifact_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+
+- name: OS report | Save per-host JSON report on control node
+  ansible.builtin.copy:
+    # content tạo nội dung file ngay từ biến Ansible runtime của host hiện tại.
+    # to_nice_json format JSON dễ đọc, có indent.
+    content: |
+      {{
+        {
+          "host": inventory_hostname,
+          "job_results": {
+            "JOB-OS-01": {
+              "resources": os_node_resource_raw | default({}),
+              "findings": os_node_resource_findings | default([])
+            },
+            "JOB-OS-02": {
+              "event_logs": os_event_log_raw | default({}),
+              "findings": os_event_log_findings | default([])
+            },
+            "JOB-OS-03": {
+              "cron_jobs": os_cron_jobs_raw | default({}),
+              "findings": os_cron_jobs_findings | default([])
+            },
+            "JOB-OS-04": {
+              "smart": os_smart_raw | default({}),
+              "findings": os_smart_findings | default([]),
+              "skipped": os_smart_skipped | default([])
+            }
+          }
+        } | to_nice_json
+      }}
+    # inventory_hostname dùng tên host trong inventory: cp01, cp02, ...
+    dest: "{{ os_check_artifact_dir }}/{{ inventory_hostname }}-os-check.json"
+    mode: "0644"
+  delegate_to: localhost
+  become: false

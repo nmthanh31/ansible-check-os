@@ -1,20 +1,198 @@
 ---
 # JOB-OS-04 - Kiểm tra SMART.
-# Điều kiện:
-# - Nếu là máy vật lý, kiểm tra SMART khi smartctl tồn tại.
-# - Nếu là VM, chỉ kiểm tra khi disk/controller passthrough hoặc SMART được expose.
-# - Nếu VM không expose SMART, trả skipped: SMART data is not exposed to the VM.
-# Tasks cần triển khai:
-# - Phát hiện máy vật lý hay VM.
-# - Kiểm tra smartctl đã được cài đặt.
-# - Tìm thiết bị hỗ trợ SMART.
-# - VM không expose SMART thì skipped.
-# - Kiểm tra SMART overall health.
-# - Kiểm tra nhiệt độ ổ đĩa.
-# - Kiểm tra reallocated/pending/uncorrectable sector.
-# - Kiểm tra UDMA CRC error.
-# - Kiểm tra SSD wear level.
-# - Kiểm tra NVMe critical warning/media error.
-# - Đọc self-test log và error log.
-- name: JOB-OS-04 | Placeholder until SMART checks are implemented
-  ansible.builtin.meta: noop
+#
+# SMART là dữ liệu sức khỏe ổ đĩa do disk/controller cung cấp.
+# Với VM thông thường, SMART của ổ vật lý thường không được expose vào guest OS.
+# Vì vậy job này phải có điều kiện:
+# - Máy vật lý: kiểm tra nếu có smartctl.
+# - VM: chỉ kiểm tra nếu smartctl nhìn thấy thiết bị SMART passthrough/exposed.
+# - VM không expose SMART: trả skipped, không kết luận ổ vật lý khỏe.
+#
+# Job này chỉ đọc dữ liệu bằng smartctl; không chạy short/long self-test.
+
+- name: JOB-OS-04 | Initialize SMART result
+  ansible.builtin.set_fact:
+    os_smart_raw: {}
+    os_smart_findings: []
+    os_smart_skipped: []
+    os_smart_should_run: false
+  changed_when: false
+
+- name: JOB-OS-04 | Detect virtualization type
+  ansible.builtin.command:
+    # systemd-detect-virt:
+    # - Phát hiện hệ thống đang chạy trên VM/container/hypervisor nào.
+    # - Nếu là máy vật lý, thường stdout là "none" hoặc command trả rc khác 0
+    #   tùy phiên bản systemd.
+    # - Nếu là VM, stdout có thể là vmware, kvm, oracle, microsoft...
+    cmd: systemd-detect-virt
+  register: os_virtualization_type
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-04 | Normalize virtualization type
+  ansible.builtin.set_fact:
+    # Nếu command thành công, dùng stdout.
+    # Nếu command không phát hiện ảo hóa, coi là none để biểu diễn máy vật lý.
+    os_virtualization_normalized: >-
+      {{
+        os_virtualization_type.stdout
+        if os_virtualization_type.rc == 0
+        else 'none'
+      }}
+  changed_when: false
+
+- name: JOB-OS-04 | Check smartctl availability
+  ansible.builtin.shell: |
+    # command -v smartctl:
+    # - command -v là shell builtin dùng để tìm executable trong PATH.
+    # - Dùng shell thay vì command module vì "command -v" là builtin của shell.
+    command -v smartctl
+  args:
+    executable: /bin/bash
+  register: os_smartctl_command
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-04 | Scan SMART-capable devices
+  ansible.builtin.command:
+    # smartctl --scan-open:
+    # - Quét các thiết bị mà smartctl có thể mở và nhận diện.
+    # - Output thường có dạng:
+    #   /dev/sda -d sat # /dev/sda, ATA device
+    #
+    # --scan-open khác --scan ở chỗ nó thử mở thiết bị để xác nhận truy cập.
+    cmd: smartctl --scan-open
+  register: os_smart_scan
+  changed_when: false
+  failed_when: false
+  when: os_smartctl_command.rc == 0
+
+- name: JOB-OS-04 | Build SMART device list
+  ansible.builtin.set_fact:
+    # Lọc dòng không rỗng và không bắt đầu bằng dấu #.
+    # Mỗi dòng vẫn giữ nguyên để report evidence đầy đủ.
+    os_smart_device_lines: >-
+      {{
+        os_smart_scan.stdout_lines
+        | default([])
+        | reject('match', '^\\s*$')
+        | reject('match', '^#')
+        | list
+      }}
+  changed_when: false
+  when: os_smartctl_command.rc == 0
+
+- name: JOB-OS-04 | Decide whether SMART check should run
+  ansible.builtin.set_fact:
+    # Đây là "cổng điều kiện" của job SMART.
+    #
+    # Job chỉ chạy phần đọc SMART thật khi:
+    # - Đã có smartctl.
+    # - smartctl --scan-open phát hiện ít nhất một thiết bị SMART.
+    #
+    # Với VM bình thường, os_smart_device_lines thường rỗng nên
+    # os_smart_should_run = false và các task đọc SMART bên dưới bị bỏ qua.
+    os_smart_should_run: >-
+      {{
+        os_smartctl_command.rc == 0
+        and ((os_smart_device_lines | default([]) | length) > 0)
+      }}
+  changed_when: false
+
+- name: JOB-OS-04 | Mark skipped when SMART cannot run
+  ansible.builtin.set_fact:
+    os_smart_skipped: >-
+      {{
+        os_smart_skipped
+        + [
+          {
+            'job': 'JOB-OS-04',
+            'target': inventory_hostname,
+            'severity': 'skipped',
+            'check': (
+              'os.smart.smartctl_missing'
+              if os_smartctl_command.rc != 0
+              else (
+                'os.smart.vm_not_exposed'
+                if os_virtualization_normalized != 'none'
+                else 'os.smart.no_devices'
+              )
+            ),
+            'message': (
+              'smartctl is not installed'
+              if os_smartctl_command.rc != 0
+              else (
+                'SMART data is not exposed to the VM'
+                if os_virtualization_normalized != 'none'
+                else 'No SMART-capable devices were detected'
+              )
+            ),
+            'evidence': [
+              'virtualization=' ~ os_virtualization_normalized,
+              'smart_devices=' ~ ((os_smart_device_lines | default([]) | length) | string)
+            ]
+          }
+        ]
+      }}
+  changed_when: false
+  when: not os_smart_should_run
+
+- name: JOB-OS-04 | Run SMART checks only when prerequisites are met
+  when: os_smart_should_run
+  block:
+    - name: JOB-OS-04 | Read SMART data for detected devices
+      ansible.builtin.command:
+        # smartctl -x DEVICE:
+        # - -x in toàn bộ dữ liệu SMART mở rộng, gồm health, attributes,
+        #   error log, self-test log và NVMe log nếu có.
+        #
+        # item.split()[0]:
+        # - Lấy cột đầu tiên từ dòng smartctl --scan-open.
+        # - Ví dụ "/dev/sda -d sat ..." -> "/dev/sda".
+        #
+        # Lưu ý:
+        # - Một số controller cần thêm "-d TYPE". Bản đầu tiên đọc path cơ bản;
+        #   nếu gặp controller đặc biệt thì bổ sung parse "-d" ở bước sau.
+        cmd: smartctl -x {{ item.split()[0] }}
+      loop: "{{ os_smart_device_lines }}"
+      register: os_smart_data
+      changed_when: false
+      failed_when: false
+
+    - name: JOB-OS-04 | Detect SMART health failures from raw output
+      ansible.builtin.set_fact:
+        os_smart_findings: >-
+          {{
+            os_smart_findings
+            + [
+              {
+                'job': 'JOB-OS-04',
+                'target': inventory_hostname,
+                'severity': 'critical',
+                'check': 'os.smart.health_failed',
+                'message': 'SMART health check reports a failed or critical state',
+                'evidence': item.stdout_lines | default([])
+              }
+            ]
+          }}
+      loop: "{{ os_smart_data.results | default([]) }}"
+      changed_when: false
+      when:
+        - item.stdout is defined
+        - item.stdout is search('(?i)(SMART overall-health self-assessment test result:\\s*FAILED|SMART Health Status:\\s*FAILED|critical warning:\\s*[1-9]|Media and Data Integrity Errors:\\s*[1-9])')
+
+- name: JOB-OS-04 | Save raw SMART result
+  ansible.builtin.set_fact:
+    os_smart_raw:
+      virtualization: "{{ os_virtualization_normalized }}"
+      smartctl_path: "{{ os_smartctl_command.stdout | default('') }}"
+      smartctl_available: "{{ os_smartctl_command.rc == 0 }}"
+      should_run: "{{ os_smart_should_run }}"
+      scan_stdout: "{{ os_smart_scan.stdout_lines | default([]) }}"
+      scan_stderr: "{{ os_smart_scan.stderr_lines | default([]) }}"
+      device_lines: "{{ os_smart_device_lines | default([]) }}"
+      smart_data: "{{ os_smart_data.results | default([]) }}"
+      skipped: "{{ os_smart_skipped }}"
+      findings: "{{ os_smart_findings }}"
+  changed_when: false
