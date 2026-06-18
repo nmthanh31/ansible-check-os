@@ -65,6 +65,11 @@ ansible-ops/
 | `playbooks/check_kubernetes.yml` | Chạy các job Kubernetes |
 | `playbooks/check_all.yml` | Chạy toàn bộ job kiểm tra |
 
+`check_kubernetes.yml` chỉ chạy trên node đầu tiên của group
+`kubernetes_control_plane`, vì chỉ control-plane mới có `kubectl`/kubeconfig để
+gọi Kubernetes API. Các worker chỉ được truy vấn qua task delegate khi cần dữ
+liệu runtime như `crictl stats`.
+
 Các playbook `audit_*` và role cũ hiện không còn là luồng chính. Chúng được giữ
 lại để tham khảo hoặc tái sử dụng code khi cần.
 

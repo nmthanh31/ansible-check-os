@@ -1,0 +1,4 @@
+---
+- import_playbook: check_os.yml
+
+- import_playbook: check_kubernetes.yml

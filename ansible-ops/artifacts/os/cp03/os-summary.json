@@ -1,0 +1,35 @@
+{
+    "host": "cp03",
+    "jobs": {
+        "JOB-OS-01": {
+            "file": "job-os-01-resources.json",
+            "status": "ok"
+        },
+        "JOB-OS-02": {
+            "file": "job-os-02-event-logs.json",
+            "status": "warning"
+        },
+        "JOB-OS-03": {
+            "file": "job-os-03-cron-jobs.json",
+            "status": "ok"
+        },
+        "JOB-OS-04": {
+            "file": "job-os-04-smart.json",
+            "status": "skipped"
+        }
+    },
+    "key_metrics": {
+        "cpu_count": 8,
+        "cron_d_files_count": 1,
+        "failed_services_count": 2,
+        "kernel_errors_count": 1,
+        "load_1m": "0.61",
+        "memory_available_mb": 3595,
+        "memory_total_mb": 7894,
+        "readonly_filesystems_count": 7,
+        "smart_devices_count": 0
+    },
+    "status": {
+        "overall": "warning"
+    }
+}

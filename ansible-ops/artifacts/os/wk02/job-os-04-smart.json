@@ -1,0 +1,29 @@
+{
+    "findings": [],
+    "host": "wk02",
+    "job": "JOB-OS-04",
+    "metrics": {
+        "devices_count": 0,
+        "findings_count": 0,
+        "should_run": false,
+        "skipped_count": 1,
+        "smartctl_available": false
+    },
+    "name": "Ki\u1ec3m tra SMART",
+    "skipped": [
+        {
+            "check": "os.smart.smartctl_missing",
+            "evidence": [
+                "virtualization=vmware",
+                "smart_devices=0"
+            ],
+            "job": "JOB-OS-04",
+            "message": "smartctl is not installed",
+            "severity": "skipped",
+            "target": "wk02"
+        }
+    ],
+    "status": {
+        "overall": "skipped"
+    }
+}

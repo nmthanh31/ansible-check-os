@@ -1,0 +1,29 @@
+{
+    "host": "cp01",
+    "jobs": {
+        "JOB-K8S-01": {
+            "file": "job-k8s-01-resources.json",
+            "status": "ok"
+        },
+        "JOB-K8S-02": {
+            "file": "job-k8s-02-events.json",
+            "status": "warning"
+        },
+        "JOB-K8S-03": {
+            "file": "job-k8s-03-alerts.json",
+            "status": "warning"
+        }
+    },
+    "key_metrics": {
+        "critical_alerts": 0,
+        "generated_alerts": 28,
+        "nodes_total": 6,
+        "pods_allocatable_total": 660,
+        "pods_capacity_total": 660,
+        "pods_total": 157,
+        "warning_events": 25
+    },
+    "status": {
+        "overall": "warning"
+    }
+}

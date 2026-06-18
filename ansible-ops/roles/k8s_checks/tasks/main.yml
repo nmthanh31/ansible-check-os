@@ -1,0 +1,24 @@
+---
+- name: JOB-K8S-01 - Kiểm tra tài nguyên
+  ansible.builtin.import_tasks: job_k8s_01_resources.yml
+  tags:
+    - job_k8s_01
+    - k8s_resources
+
+- name: JOB-K8S-02 - Kiểm tra event toàn cụm
+  ansible.builtin.import_tasks: job_k8s_02_events.yml
+  tags:
+    - job_k8s_02
+    - k8s_events
+
+- name: JOB-K8S-03 - Kiểm tra và tạo cảnh báo
+  ansible.builtin.import_tasks: job_k8s_03_alerts.yml
+  tags:
+    - job_k8s_03
+    - k8s_alerts
+
+- name: Save Kubernetes check report
+  ansible.builtin.import_tasks: save_report.yml
+  tags:
+    - always
+    - k8s_report

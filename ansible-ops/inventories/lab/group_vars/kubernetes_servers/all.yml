@@ -1,0 +1,8 @@
+---
+# File này không chứa secret thật.
+# Các biến vault_* phải nằm trong:
+# inventories/lab/group_vars/kubernetes_servers/vault.yml
+# và được mã hóa bằng ansible-vault.
+
+ansible_password: "{{ vault_ansible_password }}"
+ansible_become_pass: "{{ vault_ansible_become_pass }}"

@@ -1,0 +1,130 @@
+---
+# JOB-K8S-03 - Kiểm tra và tạo cảnh báo.
+#
+# Job này tự tạo cảnh báo từ dữ liệu của JOB-K8S-01/JOB-K8S-02.
+# Nếu có Alertmanager, job sẽ lấy thêm alert từ API.
+# Nếu không có monitoring stack, cảnh báo nội bộ vẫn chạy.
+
+- name: JOB-K8S-03 | Initialize alert result
+  ansible.builtin.set_fact:
+    # k8s_generated_alerts: alert tự tạo từ dữ liệu resource/event.
+    k8s_generated_alerts: []
+
+    # k8s_external_alerts: alert lấy từ Alertmanager nếu có cấu hình.
+    k8s_external_alerts: []
+
+    # k8s_alert_raw: dữ liệu tổng hợp để debug.
+    k8s_alert_raw: {}
+  changed_when: false
+
+- name: JOB-K8S-03 | Generate alerts from Warning events
+  ansible.builtin.set_fact:
+    k8s_generated_alerts: >-
+      {{
+        k8s_generated_alerts
+        + [
+          {
+            'job': 'JOB-K8S-03',
+            # target cho biết object nào tạo ra warning event.
+            'target': (item.get('metadata', {}).get('namespace', 'default')) ~ '/' ~ (item.get('involvedObject', {}).get('name', item.get('regarding', {}).get('name', 'unknown'))),
+            'severity': 'warning',
+            'check': 'k8s.alert.warning_event',
+            'message': item.get('reason', 'Warning') ~ ': ' ~ item.get('message', item.get('note', '')),
+            'evidence': [
+              'reason=' ~ item.get('reason', ''),
+              'count=' ~ (item.get('count', item.get('series', {}).get('count', 1)) | string)
+            ]
+          }
+        ]
+      }}
+  # Loop qua Warning event từ JOB-K8S-02.
+  loop: "{{ k8s_warning_events | default([]) }}"
+  changed_when: false
+
+- name: JOB-K8S-03 | Generate alerts from NotReady or Pressure nodes
+  ansible.builtin.set_fact:
+    k8s_generated_alerts: >-
+      {{
+        k8s_generated_alerts
+        + [
+          {
+            'job': 'JOB-K8S-03',
+            # item.0 là node, item.1 là một condition của node.
+            'target': item.0.metadata.name,
+            'severity': 'critical' if item.1.type == 'Ready' else 'warning',
+            'check': 'k8s.node.' ~ item.1.type,
+            'message': 'Node condition is not healthy: ' ~ item.1.type ~ '=' ~ item.1.status,
+            'evidence': [
+              'node=' ~ item.0.metadata.name,
+              'condition=' ~ item.1.type,
+              'status=' ~ item.1.status,
+              'reason=' ~ (item.1.reason | default(''))
+            ]
+          }
+        ]
+      }}
+  # subelements('status.conditions') tách mỗi node thành nhiều phần tử condition.
+  # Ví dụ node cp01 có Ready, MemoryPressure, DiskPressure...
+  loop: "{{ ((k8s_resource_raw | default({})).get('nodes', {}).get('items', [])) | subelements('status.conditions', skip_missing=True) }}"
+  changed_when: false
+  when:
+    # Ready khỏe khi status=True; các pressure khỏe khi status=False.
+    - (item.1.type == 'Ready' and item.1.status != 'True') or
+      (item.1.type in ['MemoryPressure', 'DiskPressure', 'PIDPressure'] and item.1.status == 'True')
+
+- name: JOB-K8S-03 | Generate alerts from non-running pods
+  ansible.builtin.set_fact:
+    k8s_generated_alerts: >-
+      {{
+        k8s_generated_alerts
+        + [
+          {
+            'job': 'JOB-K8S-03',
+            'target': item.get('metadata', {}).get('namespace', 'default') ~ '/' ~ item.get('metadata', {}).get('name', 'unknown'),
+            'severity': 'warning',
+            'check': 'k8s.pod.phase',
+            'message': 'Pod is not running or completed: ' ~ (item.status.phase | default('Unknown')),
+            'evidence': [
+              'namespace=' ~ item.get('metadata', {}).get('namespace', 'default'),
+              'pod=' ~ item.get('metadata', {}).get('name', 'unknown'),
+              'phase=' ~ item.get('status', {}).get('phase', 'Unknown')
+            ]
+          }
+        ]
+      }}
+  # Pod Running/Succeeded được coi là bình thường.
+  # Pending/Failed/Unknown sẽ tạo alert.
+  loop: "{{ (k8s_resource_raw | default({})).get('pods', {}).get('items', []) }}"
+  changed_when: false
+  when:
+    - item.get('status', {}).get('phase', 'Unknown') not in ['Running', 'Succeeded']
+
+- name: JOB-K8S-03 | Try Alertmanager API when configured
+  ansible.builtin.uri:
+    # Alertmanager API v2 trả danh sách alert đang firing/pending.
+    # return_content: true để lưu response body.
+    url: "{{ k8s_check_alertmanager_url }}/api/v2/alerts"
+    method: GET
+    return_content: true
+  register: k8s_alertmanager_response
+  changed_when: false
+  failed_when: false
+  when: k8s_check_alertmanager_url | length > 0
+
+- name: JOB-K8S-03 | Save external Alertmanager alerts
+  ansible.builtin.set_fact:
+    k8s_external_alerts: "{{ k8s_alertmanager_response.json | default([]) }}"
+  changed_when: false
+  when:
+    - k8s_check_alertmanager_url | length > 0
+    - k8s_alertmanager_response is defined
+    - k8s_alertmanager_response.status | default(0) == 200
+
+- name: JOB-K8S-03 | Save alert raw result
+  ansible.builtin.set_fact:
+    k8s_alert_raw:
+      generated_alerts: "{{ k8s_generated_alerts }}"
+      external_alerts: "{{ k8s_external_alerts }}"
+      alertmanager_configured: "{{ k8s_check_alertmanager_url | length > 0 }}"
+      alertmanager_status: "{{ k8s_alertmanager_response.status | default('not_configured') }}"
+  changed_when: false

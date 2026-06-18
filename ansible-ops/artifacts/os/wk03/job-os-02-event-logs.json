@@ -1,0 +1,14 @@
+{
+    "findings": [],
+    "host": "wk03",
+    "job": "JOB-OS-02",
+    "metrics": {
+        "failed_services_count": 2,
+        "kernel_errors_count": 39,
+        "os_error_patterns_count": 106
+    },
+    "name": "Ki\u1ec3m tra event log OS",
+    "status": {
+        "overall": "warning"
+    }
+}

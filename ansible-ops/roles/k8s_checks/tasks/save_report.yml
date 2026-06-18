@@ -1,0 +1,182 @@
+---
+# Ghi báo cáo Kubernetes JSON về máy control.
+# Báo cáo được tách theo job để dễ đọc:
+# - artifacts/k8s/job-k8s-01-resources.json
+# - artifacts/k8s/job-k8s-02-events.json
+# - artifacts/k8s/job-k8s-03-alerts.json
+# - artifacts/k8s/kubernetes-summary.json
+#
+# Mặc định không đổ raw JSON dài. Nếu cần debug sâu, bật:
+#   -e k8s_check_include_raw=true
+
+- name: Kubernetes report | Ensure artifact directory exists on control node
+  ansible.builtin.file:
+    # Tạo thư mục artifacts/k8s trên máy control.
+    # delegate_to: localhost ở dưới đảm bảo không tạo thư mục trên node Kubernetes.
+    path: "{{ k8s_check_artifact_dir }}/k8s"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+
+- name: Kubernetes report | Build JOB-K8S-01 report
+  ansible.builtin.set_fact:
+    # File report riêng cho job tài nguyên.
+    # Chỉ chứa status, metrics, findings, skipped; không chứa raw JSON dài.
+    k8s_job_01_report:
+      job: JOB-K8S-01
+      name: Kiểm tra tài nguyên
+      host: "{{ inventory_hostname }}"
+      status:
+        overall: >-
+          {{
+            'warning'
+            if (k8s_resource_skipped | default([]) | length) > 0
+            else 'ok'
+          }}
+      metrics:
+        # Đây là các số liệu chính để giám sát nhanh.
+        nodes_total: "{{ (k8s_resource_metrics | default({})).get('nodes_total', 0) }}"
+        pods_total: "{{ (k8s_resource_metrics | default({})).get('pods_total', 0) }}"
+        pods_capacity_total: "{{ (k8s_resource_metrics | default({})).get('pods_capacity_total', 0) }}"
+        pods_allocatable_total: "{{ (k8s_resource_metrics | default({})).get('pods_allocatable_total', 0) }}"
+        pods_running: "{{ (k8s_resource_metrics | default({})).get('pods_running', 0) }}"
+        pods_pending: "{{ (k8s_resource_metrics | default({})).get('pods_pending', 0) }}"
+        pods_failed: "{{ (k8s_resource_metrics | default({})).get('pods_failed', 0) }}"
+        pods_succeeded: "{{ (k8s_resource_metrics | default({})).get('pods_succeeded', 0) }}"
+        metrics_api_top_nodes_available: "{{ (k8s_resource_metrics | default({})).get('metrics_api_top_nodes_available', false) }}"
+        metrics_api_top_pods_available: "{{ (k8s_resource_metrics | default({})).get('metrics_api_top_pods_available', false) }}"
+      findings: "{{ k8s_resource_findings | default([]) }}"
+      skipped: "{{ k8s_resource_skipped | default([]) }}"
+  changed_when: false
+
+- name: Kubernetes report | Build JOB-K8S-02 report
+  ansible.builtin.set_fact:
+    # File report riêng cho event toàn cụm.
+    k8s_job_02_report:
+      job: JOB-K8S-02
+      name: Kiểm tra event toàn cụm
+      host: "{{ inventory_hostname }}"
+      status:
+        overall: >-
+          {{
+            'warning'
+            if (k8s_event_findings | default([]) | length) > 0
+            else (
+              'skipped'
+              if (k8s_event_skipped | default([]) | length) > 0
+              else 'ok'
+            )
+          }}
+      metrics:
+        warning_events: "{{ k8s_warning_events | default([]) | length }}"
+        findings_total: "{{ k8s_event_findings | default([]) | length }}"
+        skipped_total: "{{ k8s_event_skipped | default([]) | length }}"
+      findings: "{{ k8s_event_findings | default([]) }}"
+      skipped: "{{ k8s_event_skipped | default([]) }}"
+  changed_when: false
+
+- name: Kubernetes report | Build JOB-K8S-03 report
+  ansible.builtin.set_fact:
+    # File report riêng cho alert.
+    k8s_job_03_report:
+      job: JOB-K8S-03
+      name: Kiểm tra và tạo cảnh báo
+      host: "{{ inventory_hostname }}"
+      status:
+        overall: >-
+          {{
+            'critical'
+            if ((k8s_generated_alerts | default([])) | selectattr('severity', 'equalto', 'critical') | list | length) > 0
+            else (
+              'warning'
+              if (k8s_generated_alerts | default([]) | length) > 0
+              else 'ok'
+            )
+          }}
+      metrics:
+        generated_alerts: "{{ k8s_generated_alerts | default([]) | length }}"
+        external_alerts: "{{ k8s_external_alerts | default([]) | length }}"
+        critical_alerts: "{{ (k8s_generated_alerts | default([]) | selectattr('severity', 'equalto', 'critical') | list) | length }}"
+        warning_alerts: "{{ (k8s_generated_alerts | default([]) | selectattr('severity', 'equalto', 'warning') | list) | length }}"
+      alerts: "{{ k8s_generated_alerts | default([]) + k8s_external_alerts | default([]) }}"
+  changed_when: false
+
+- name: Kubernetes report | Add raw data to per-job reports when debug is enabled
+  ansible.builtin.set_fact:
+    k8s_job_01_report: "{{ k8s_job_01_report | combine({'raw': k8s_resource_raw | default({})}, recursive=True) }}"
+    k8s_job_02_report: "{{ k8s_job_02_report | combine({'raw': k8s_events_raw | default({})}, recursive=True) }}"
+    k8s_job_03_report: "{{ k8s_job_03_report | combine({'raw': k8s_alert_raw | default({})}, recursive=True) }}"
+  changed_when: false
+  when: k8s_check_include_raw | bool
+
+- name: Kubernetes report | Build summary report
+  ansible.builtin.set_fact:
+    # Summary là file nhỏ nhất, dùng để nhìn nhanh trạng thái toàn Kubernetes.
+    k8s_summary_report:
+      host: "{{ inventory_hostname }}"
+      status:
+        overall: >-
+          {{
+            'critical'
+            if k8s_job_03_report.get('status', {}).get('overall') == 'critical'
+            else (
+              'warning'
+              if k8s_job_01_report.get('status', {}).get('overall') == 'warning'
+                 or k8s_job_02_report.get('status', {}).get('overall') in ['warning', 'skipped']
+                 or k8s_job_03_report.get('status', {}).get('overall') == 'warning'
+              else 'ok'
+            )
+          }}
+      jobs:
+        JOB-K8S-01:
+          status: "{{ k8s_job_01_report.get('status', {}).get('overall', 'unknown') }}"
+          file: "job-k8s-01-resources.json"
+        JOB-K8S-02:
+          status: "{{ k8s_job_02_report.get('status', {}).get('overall', 'unknown') }}"
+          file: "job-k8s-02-events.json"
+        JOB-K8S-03:
+          status: "{{ k8s_job_03_report.get('status', {}).get('overall', 'unknown') }}"
+          file: "job-k8s-03-alerts.json"
+      key_metrics:
+        nodes_total: "{{ k8s_job_01_report.get('metrics', {}).get('nodes_total', 0) }}"
+        pods_total: "{{ k8s_job_01_report.get('metrics', {}).get('pods_total', 0) }}"
+        pods_capacity_total: "{{ k8s_job_01_report.get('metrics', {}).get('pods_capacity_total', 0) }}"
+        pods_allocatable_total: "{{ k8s_job_01_report.get('metrics', {}).get('pods_allocatable_total', 0) }}"
+        warning_events: "{{ k8s_job_02_report.get('metrics', {}).get('warning_events', 0) }}"
+        generated_alerts: "{{ k8s_job_03_report.get('metrics', {}).get('generated_alerts', 0) }}"
+        critical_alerts: "{{ k8s_job_03_report.get('metrics', {}).get('critical_alerts', 0) }}"
+  changed_when: false
+
+- name: Kubernetes report | Save JOB-K8S-01 report
+  ansible.builtin.copy:
+    content: "{{ k8s_job_01_report | to_nice_json }}"
+    dest: "{{ k8s_check_artifact_dir }}/k8s/job-k8s-01-resources.json"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: Kubernetes report | Save JOB-K8S-02 report
+  ansible.builtin.copy:
+    content: "{{ k8s_job_02_report | to_nice_json }}"
+    dest: "{{ k8s_check_artifact_dir }}/k8s/job-k8s-02-events.json"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: Kubernetes report | Save JOB-K8S-03 report
+  ansible.builtin.copy:
+    content: "{{ k8s_job_03_report | to_nice_json }}"
+    dest: "{{ k8s_check_artifact_dir }}/k8s/job-k8s-03-alerts.json"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: Kubernetes report | Save summary report
+  ansible.builtin.copy:
+    content: "{{ k8s_summary_report | to_nice_json }}"
+    dest: "{{ k8s_check_artifact_dir }}/k8s/kubernetes-summary.json"
+    mode: "0644"
+  delegate_to: localhost
+  become: false

@@ -9,6 +9,8 @@
 ## Ghi chú
 
 - `check_os.yml` chạy trên group `kubernetes_servers`.
-- `check_kubernetes.yml` chạy từ node đầu tiên trong group `kubernetes_servers`
-  để gọi Kubernetes API hoặc `kubectl`.
+- `check_kubernetes.yml` chạy từ node đầu tiên trong group
+  `kubernetes_control_plane` để gọi Kubernetes API hoặc `kubectl`.
+- Các worker không chạy `kubectl`; khi cần dữ liệu runtime, role có thể
+  delegate task như `crictl stats` sang từng node trong `kubernetes_servers`.
 - Các playbook `audit_*` cũ chưa bị xóa nhưng không còn là luồng chính.

@@ -1,0 +1,327 @@
+{
+    "alerts": [
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "apisix/apisix-etcd-0"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "apisix/apisix-etcd-1"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "apisix/apisix-etcd-2"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "apisix/apisix-etcd-pre-upgrade-nq4lh"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "apisix/apisix-etcd-pre-upgrade"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "apisix/apisix-etcd"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "cmp-bms-dev/cmp-billing-5879c98c58"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: Job apisix/apisix-etcd-pre-upgrade: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: Pod apisix/apisix-etcd-pre-upgrade-nq4lh: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: StatefulSet apisix/apisix-etcd: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: Pod apisix/apisix-etcd-0: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: Pod apisix/apisix-etcd-1: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: Pod apisix/apisix-etcd-2: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: ReplicaSet cmp-bms-dev/cmp-billing-5879c98c58: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: Deployment istio-ingress/istio-ingress: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: ReplicaSet istio-ingress/istio-ingress-67c67cdc54: fail; \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "default/disallow-latest-tag"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "istio-ingress/istio-ingress-67c67cdc54"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=PolicyViolation",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "PolicyViolation: policy disallow-latest-tag/ fail: \u1ee8ng d\u1ee5ng kh\u00f4ng \u0111\u01b0\u1ee3c ph\u00e9p s\u1eed d\u1ee5ng tag ':latest' ho\u1eb7c thi\u1ebfu tag phi\u00ean b\u1ea3n t\u1ea1i m\u1ee5c 'containers'.",
+            "severity": "warning",
+            "target": "istio-ingress/istio-ingress"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=FailedCreate",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "FailedCreate: Error creating: pods \"nexus-nexus-repository-manager-5496dfd9b9-gnwdv\" is forbidden: exceeded quota: default-29z48, requested: limits.cpu=2,limits.memory=4Gi, used: limits.cpu=0,limits.memory=0, limited: limits.cpu=3m,limits.memory=6Mi",
+            "severity": "warning",
+            "target": "nexus/nexus-nexus-repository-manager-5496dfd9b9"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=FailedCreate",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "FailedCreate: Error creating: pods \"nexus-nexus-repository-manager-5496dfd9b9-8xpzh\" is forbidden: exceeded quota: default-29z48, requested: limits.cpu=2,limits.memory=4Gi, used: limits.cpu=0,limits.memory=0, limited: limits.cpu=3m,limits.memory=6Mi",
+            "severity": "warning",
+            "target": "nexus/nexus-nexus-repository-manager-5496dfd9b9"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=FailedCreate",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "FailedCreate: Error creating: pods \"nexus-nexus-repository-manager-5496dfd9b9-hcnrd\" is forbidden: exceeded quota: default-29z48, requested: limits.cpu=2,limits.memory=4Gi, used: limits.cpu=0,limits.memory=0, limited: limits.cpu=3m,limits.memory=6Mi",
+            "severity": "warning",
+            "target": "nexus/nexus-nexus-repository-manager-5496dfd9b9"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=FailedCreate",
+                "count=1"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "FailedCreate: Error creating: pods \"nexus-nexus-repository-manager-5496dfd9b9-w57gp\" is forbidden: exceeded quota: default-29z48, requested: limits.cpu=2,limits.memory=4Gi, used: limits.cpu=0,limits.memory=0, limited: limits.cpu=3m,limits.memory=6Mi",
+            "severity": "warning",
+            "target": "nexus/nexus-nexus-repository-manager-5496dfd9b9"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=Unhealthy",
+                "count=54"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "Unhealthy: Readiness probe failed: ",
+            "severity": "warning",
+            "target": "postgres-dev/pg-dev-pg-db-instance1-6hs4-0"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=Unhealthy",
+                "count=73"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "Unhealthy: Readiness probe failed: ",
+            "severity": "warning",
+            "target": "postgres-dev/pg-dev-pg-db-instance1-ms8h-0"
+        },
+        {
+            "check": "k8s.alert.warning_event",
+            "evidence": [
+                "reason=FailedCreate",
+                "count=1728"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "FailedCreate: create Pod tempo-0 in StatefulSet tempo failed error: pods \"tempo-0\" is forbidden: exceeded quota: default-drpdk, requested: limits.cpu=1,requests.cpu=500m, used: limits.cpu=0,requests.cpu=0, limited: limits.cpu=400m,requests.cpu=200m",
+            "severity": "warning",
+            "target": "tempo/tempo"
+        },
+        {
+            "check": "k8s.pod.phase",
+            "evidence": [
+                "namespace=postgres-dev",
+                "pod=pg-dev-pg-db-backup-5mp9-6trzb",
+                "phase=Failed"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "Pod is not running or completed: Failed",
+            "severity": "warning",
+            "target": "postgres-dev/pg-dev-pg-db-backup-5mp9-6trzb"
+        },
+        {
+            "check": "k8s.pod.phase",
+            "evidence": [
+                "namespace=postgres-dev",
+                "pod=pg-dev-pg-db-backup-c8g5-crv64",
+                "phase=Failed"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "Pod is not running or completed: Failed",
+            "severity": "warning",
+            "target": "postgres-dev/pg-dev-pg-db-backup-c8g5-crv64"
+        },
+        {
+            "check": "k8s.pod.phase",
+            "evidence": [
+                "namespace=postgres-dev",
+                "pod=pg-dev-pg-db-backup-c8g5-l8nrr",
+                "phase=Failed"
+            ],
+            "job": "JOB-K8S-03",
+            "message": "Pod is not running or completed: Failed",
+            "severity": "warning",
+            "target": "postgres-dev/pg-dev-pg-db-backup-c8g5-l8nrr"
+        }
+    ],
+    "host": "cp01",
+    "job": "JOB-K8S-03",
+    "metrics": {
+        "critical_alerts": 0,
+        "external_alerts": 0,
+        "generated_alerts": 28,
+        "warning_alerts": 28
+    },
+    "name": "Ki\u1ec3m tra v\u00e0 t\u1ea1o c\u1ea3nh b\u00e1o",
+    "status": {
+        "overall": "warning"
+    }
+}

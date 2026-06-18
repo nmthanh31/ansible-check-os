@@ -1,0 +1,24 @@
+{
+    "findings": [],
+    "host": "cp01",
+    "job": "JOB-OS-01",
+    "metrics": {
+        "cpu_count": 8,
+        "filesystems_count": 36,
+        "load_15m": "0.53",
+        "load_1m": "0.39",
+        "load_5m": "0.42",
+        "memory_available_mb": 3149,
+        "memory_total_mb": 7894,
+        "memory_used_mb": 4429,
+        "readonly_filesystems_count": 11,
+        "swap_total_mb": 0,
+        "swap_used_mb": 0,
+        "top_cpu_processes_count": 10,
+        "top_memory_processes_count": 10
+    },
+    "name": "Ki\u1ec3m tra t\u00e0i nguy\u00ean node",
+    "status": {
+        "overall": "ok"
+    }
+}

@@ -134,3 +134,23 @@
       top_cpu_processes: "{{ os_top_cpu_processes.stdout_lines }}"
       top_memory_processes: "{{ os_top_memory_processes.stdout_lines }}"
   changed_when: false
+
+- name: JOB-OS-01 | Save compact node resource metrics
+  ansible.builtin.set_fact:
+    # os_node_resource_metrics là phần số liệu ngắn gọn cho report.
+    # Nó tránh ghi nguyên output của free/df/ps vào JSON giám sát.
+    os_node_resource_metrics:
+      cpu_count: "{{ os_cpu_count.stdout | int }}"
+      load_1m: "{{ os_loadavg.stdout.split()[0] | default('0') }}"
+      load_5m: "{{ os_loadavg.stdout.split()[1] | default('0') }}"
+      load_15m: "{{ os_loadavg.stdout.split()[2] | default('0') }}"
+      memory_total_mb: "{{ os_memory.stdout_lines[1].split()[1] | int }}"
+      memory_used_mb: "{{ os_memory.stdout_lines[1].split()[2] | int }}"
+      memory_available_mb: "{{ os_memory.stdout_lines[1].split()[6] | int }}"
+      swap_total_mb: "{{ os_memory.stdout_lines[2].split()[1] | int }}"
+      swap_used_mb: "{{ os_memory.stdout_lines[2].split()[2] | int }}"
+      filesystems_count: "{{ (os_filesystems.stdout_lines | length) - 1 }}"
+      readonly_filesystems_count: "{{ os_readonly_filesystems.stdout_lines | length }}"
+      top_cpu_processes_count: "{{ os_check_top_process_count }}"
+      top_memory_processes_count: "{{ os_check_top_process_count }}"
+  changed_when: false

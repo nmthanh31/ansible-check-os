@@ -1,0 +1,14 @@
+---
+k8s_check_kubectl: /var/lib/rancher/rke2/bin/kubectl
+k8s_check_kubeconfig: /etc/rancher/rke2/rke2.yaml
+k8s_check_crictl: /var/lib/rancher/rke2/bin/crictl
+k8s_check_event_since: "24h"
+k8s_check_pending_pod_minutes: 10
+k8s_check_cpu_request_warning_percent: 80
+k8s_check_cpu_request_critical_percent: 90
+k8s_check_memory_request_warning_percent: 80
+k8s_check_memory_request_critical_percent: 90
+k8s_check_warning_event_repeat_threshold: 3
+k8s_check_alertmanager_url: ""
+k8s_check_artifact_dir: "{{ playbook_dir }}/../artifacts"
+k8s_check_include_raw: false

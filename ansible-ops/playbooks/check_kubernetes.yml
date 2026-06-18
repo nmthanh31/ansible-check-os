@@ -1,0 +1,11 @@
+---
+- name: Check Kubernetes jobs
+  hosts: kubernetes_control_plane[0]
+  become: true
+  gather_facts: false
+
+  roles:
+    - role: k8s_checks
+      tags:
+        - kubernetes
+        - checks

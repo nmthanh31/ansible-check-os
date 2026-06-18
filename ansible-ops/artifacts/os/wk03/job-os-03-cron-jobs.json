@@ -1,0 +1,15 @@
+{
+    "findings": [],
+    "host": "wk03",
+    "job": "JOB-OS-03",
+    "metrics": {
+        "cron_d_files_count": 1,
+        "periodic_cron_files_count": 10,
+        "systemd_timers_lines": 18,
+        "user_crontabs_checked": 37
+    },
+    "name": "Ki\u1ec3m tra cron job OS",
+    "status": {
+        "overall": "ok"
+    }
+}

@@ -18,3 +18,4 @@ os_check_disk_critical_percent: 90
 os_check_inode_warning_percent: 80
 os_check_inode_critical_percent: 90
 os_check_artifact_dir: "{{ playbook_dir }}/../artifacts"
+os_check_include_raw: false

@@ -1,0 +1,112 @@
+---
+# JOB-K8S-02 - Kiểm tra event toàn cụm.
+#
+# Kubernetes Event thường chỉ được giữ trong thời gian ngắn.
+# Job này đọc event hiện còn trong cluster, lọc Warning event và lưu raw data.
+
+- name: JOB-K8S-02 | Initialize Kubernetes event result
+  ansible.builtin.set_fact:
+    # k8s_events_raw: event JSON thô từ Kubernetes API.
+    k8s_events_raw: {}
+
+    # k8s_warning_events: chỉ các event type=Warning, dùng cho finding/alert.
+    k8s_warning_events: []
+
+    # k8s_event_findings: danh sách cảnh báo đọc được từ event.
+    k8s_event_findings: []
+
+    # k8s_event_skipped: lý do không đọc được event nếu kubectl lỗi.
+    k8s_event_skipped: []
+  changed_when: false
+
+- name: JOB-K8S-02 | Read events from all namespaces
+  ansible.builtin.command:
+    # kubectl get events -A -o json:
+    # - -A lấy event ở tất cả namespace.
+    # - -o json trả dữ liệu có cấu trúc, gồm type, reason, message,
+    #   involvedObject, count, firstTimestamp, lastTimestamp.
+    #
+    # Event trong Kubernetes có TTL ngắn, nên đây là snapshot tại thời điểm chạy.
+    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} get events -A -o json"
+  register: k8s_events_json
+  changed_when: false
+  failed_when: false
+
+- name: JOB-K8S-02 | Save raw events
+  ansible.builtin.set_fact:
+    # Chỉ parse JSON khi kubectl chạy thành công.
+    # Nếu kubectl lỗi, stdout có thể rỗng hoặc không phải JSON, parse sẽ fail.
+    # Khi đó dùng object rỗng {"items": []} để job vẫn tiếp tục.
+    k8s_events_raw: >-
+      {{
+        (k8s_events_json.stdout | default('{"items":[]}', true) | from_json)
+        if k8s_events_json.rc == 0
+        else {'items': []}
+      }}
+  changed_when: false
+
+- name: JOB-K8S-02 | Mark event check skipped when kubectl fails
+  ansible.builtin.set_fact:
+    k8s_event_skipped: >-
+      {{
+        k8s_event_skipped
+        + [
+          {
+            'job': 'JOB-K8S-02',
+            'target': 'cluster',
+            'severity': 'skipped',
+            'check': 'k8s.events.read',
+            'message': 'Cannot read Kubernetes events',
+            'evidence': k8s_events_json.stderr_lines | default([])
+          }
+        ]
+      }}
+  changed_when: false
+  when: k8s_events_json.rc != 0
+
+- name: JOB-K8S-02 | Extract Warning events
+  ansible.builtin.set_fact:
+    # selectattr('type', 'equalto', 'Warning'):
+    # - Lọc event có type Warning.
+    # - Normal event thường là thông tin vận hành bình thường.
+    k8s_warning_events: >-
+      {{
+        k8s_events_raw.get('items', [])
+        | default([])
+        | selectattr('type', 'equalto', 'Warning')
+        | list
+      }}
+  changed_when: false
+
+- name: JOB-K8S-02 | Create findings from Warning events
+  ansible.builtin.set_fact:
+    k8s_event_findings: >-
+      {{
+        k8s_event_findings
+        + [
+          {
+            'job': 'JOB-K8S-02',
+            # target cố gắng hỗ trợ cả event API cũ và mới:
+            # - API cũ dùng involvedObject.
+            # - API mới có thể dùng regarding.
+            'target': (
+              (item.get('metadata', {}).get('namespace', item.get('namespace', 'default')))
+              ~ '/'
+              ~ (item.get('involvedObject', {}).get('kind', item.get('regarding', {}).get('kind', 'Object')))
+              ~ '/'
+              ~ (item.get('involvedObject', {}).get('name', item.get('regarding', {}).get('name', item.get('metadata', {}).get('name', 'unknown'))))
+            ),
+            'severity': 'warning',
+            'check': 'k8s.event.' ~ item.get('reason', 'warning'),
+            # message là field cũ; note là field trong events.k8s.io/v1.
+            'message': item.get('message', item.get('note', 'Kubernetes warning event')),
+            'evidence': [
+              'reason=' ~ item.get('reason', ''),
+              'count=' ~ (item.get('count', item.get('series', {}).get('count', 1)) | string),
+              'lastTimestamp=' ~ item.get('lastTimestamp', item.get('eventTime', item.get('deprecatedLastTimestamp', '')))
+            ]
+          }
+        ]
+      }}
+  loop: "{{ k8s_warning_events }}"
+  changed_when: false

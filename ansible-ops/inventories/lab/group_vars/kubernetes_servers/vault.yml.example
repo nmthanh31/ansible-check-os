@@ -1,0 +1,8 @@
+---
+# Copy file này thành vault.yml rồi mã hóa bằng ansible-vault.
+#
+# Đường dẫn đúng:
+# inventories/lab/group_vars/kubernetes_servers/vault.yml
+
+vault_ansible_password: "change-me"
+vault_ansible_become_pass: "change-me"
