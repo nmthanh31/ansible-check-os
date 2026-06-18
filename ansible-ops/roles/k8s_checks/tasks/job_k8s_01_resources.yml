@@ -59,7 +59,7 @@
     #
     # --no-headers:
     # - Bỏ dòng tiêu đề, output gọn hơn để parse.
-    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top nodes --no-headers"
+    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top nodes --sort-by=cpu --no-headers"
   register: k8s_top_nodes
   changed_when: false
 
@@ -67,13 +67,29 @@
   # Không fail job vì vẫn có thể kiểm tra capacity/request/limit.
   failed_when: false
 
+- name: JOB-K8S-01 | Try Metrics API for node memory usage
+  ansible.builtin.command:
+    # Sap xep node theo memory de report biet node nao dang dung RAM cao nhat.
+    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top nodes --sort-by=memory --no-headers"
+  register: k8s_top_nodes_memory
+  changed_when: false
+  failed_when: false
+
 - name: JOB-K8S-01 | Try Metrics API for pod usage
   ansible.builtin.command:
     # kubectl top pods -A:
     # - Lấy CPU/RAM usage thực tế theo pod ở mọi namespace.
     # - Cần Metrics Server.
-    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top pods -A --no-headers"
+    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top pods -A --sort-by=cpu --no-headers"
   register: k8s_top_pods
+  changed_when: false
+  failed_when: false
+
+- name: JOB-K8S-01 | Try Metrics API for pod memory usage
+  ansible.builtin.command:
+    # Sap xep pod theo memory de report biet pod nao dang dung RAM cao nhat.
+    cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top pods -A --sort-by=memory --no-headers"
+  register: k8s_top_pods_memory
   changed_when: false
   failed_when: false
 
@@ -126,10 +142,12 @@
       pods: "{{ k8s_pods_json.stdout | from_json }}"
       metrics_api:
         top_nodes_available: "{{ k8s_top_nodes.rc == 0 }}"
-        top_nodes: "{{ k8s_top_nodes.stdout_lines | default([]) }}"
+        top_nodes_by_cpu: "{{ k8s_top_nodes.stdout_lines | default([]) }}"
+        top_nodes_by_memory: "{{ k8s_top_nodes_memory.stdout_lines | default([]) }}"
         top_nodes_error: "{{ k8s_top_nodes.stderr_lines | default([]) }}"
         top_pods_available: "{{ k8s_top_pods.rc == 0 }}"
-        top_pods: "{{ k8s_top_pods.stdout_lines | default([]) }}"
+        top_pods_by_cpu: "{{ k8s_top_pods.stdout_lines | default([]) }}"
+        top_pods_by_memory: "{{ k8s_top_pods_memory.stdout_lines | default([]) }}"
         top_pods_error: "{{ k8s_top_pods.stderr_lines | default([]) }}"
       runtime_stats:
         crictl_results: "{{ k8s_crictl_stats.results | default([]) }}"

@@ -1,0 +1,9 @@
+---
+- name: Check and install required tools for OS/Kubernetes jobs
+  hosts: kubernetes_servers
+  become: true
+  gather_facts: true
+  roles:
+    - role: ../roles/tool_prerequisites
+      tags:
+        - prepare_tools

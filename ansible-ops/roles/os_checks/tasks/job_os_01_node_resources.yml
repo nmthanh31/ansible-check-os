@@ -151,6 +151,4 @@
       swap_used_mb: "{{ os_memory.stdout_lines[2].split()[2] | int }}"
       filesystems_count: "{{ (os_filesystems.stdout_lines | length) - 1 }}"
       readonly_filesystems_count: "{{ os_readonly_filesystems.stdout_lines | length }}"
-      top_cpu_processes_count: "{{ os_check_top_process_count }}"
-      top_memory_processes_count: "{{ os_check_top_process_count }}"
   changed_when: false

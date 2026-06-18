@@ -1,4 +1,45 @@
 {
+    "highlights": {
+        "error_patterns_sample": [
+            "Jun 17 15:28:28 Kubernetes-worker03 systemd[1]: cri-containerd-993336a4a35b721722a0b8d9b4b8a2bcbe496788f29a62d404078bc6c32b0abd.scope: Deactivated successfully.",
+            "Jun 17 15:28:28 Kubernetes-worker03 systemd[1]: run-k3s-containerd-io.containerd.runtime.v2.task-k8s.io-993336a4a35b721722a0b8d9b4b8a2bcbe496788f29a62d404078bc6c32b0abd-rootfs.mount: Deactivated successfully.",
+            "Jun 17 15:28:29 Kubernetes-worker03 systemd[1]: cri-containerd-bed309608a2ef2c52e7ca96ca5f730dac2dbc12dd1224d95f89fc1156bc9e08a.scope: Deactivated successfully.",
+            "Jun 17 15:28:29 Kubernetes-worker03 systemd[1]: run-k3s-containerd-io.containerd.runtime.v2.task-k8s.io-bed309608a2ef2c52e7ca96ca5f730dac2dbc12dd1224d95f89fc1156bc9e08a-rootfs.mount: Deactivated successfully.",
+            "Jun 17 15:28:30 Kubernetes-worker03 systemd[1]: cri-containerd-1f34d9622936eb34e97c6c79ac4e432c5114ba14ad723e228b0901b0c4adc4a3.scope: Deactivated successfully."
+        ],
+        "failed_services_sample": [
+            "UNIT LOAD ACTIVE SUB DESCRIPTION",
+            "0 loaded units listed."
+        ],
+        "smart_devices": [
+            "/dev/sda -d scsi # /dev/sda, SCSI device",
+            "/dev/sdb -d scsi # /dev/sdb, SCSI device",
+            "/dev/sdc -d scsi # /dev/sdc, SCSI device",
+            "/dev/sdd -d scsi # /dev/sdd, SCSI device",
+            "/dev/sde -d scsi # /dev/sde, SCSI device",
+            "/dev/sdf -d scsi # /dev/sdf, SCSI device",
+            "/dev/sdg -d scsi # /dev/sdg, SCSI device",
+            "/dev/sdh -d scsi # /dev/sdh, SCSI device",
+            "/dev/sdi -d scsi # /dev/sdi, SCSI device",
+            "/dev/sdj -d scsi # /dev/sdj, SCSI device",
+            "/dev/sdk -d scsi # /dev/sdk, SCSI device",
+            "/dev/sdl -d scsi # /dev/sdl, SCSI device"
+        ],
+        "top_cpu_processes": [
+            "  40471 setup    prometheus      57.1 15.8",
+            " 888277 root     containerd      53.2  0.7",
+            " 888845 root     kubelet         10.4  0.8",
+            "2261896 root     sudo             8.0  0.0",
+            "2653595 root     longhorn-instan  6.1  0.2"
+        ],
+        "top_memory_processes": [
+            "  40471 setup    prometheus      57.1 15.7",
+            "3092978 root     rancher          5.7  4.5",
+            " 774962 setup    java             0.2  3.6",
+            "  50021 root     longhorn-manage  2.8  1.6",
+            " 774921 2000     mongod           2.4  1.5"
+        ]
+    },
     "host": "wk03",
     "jobs": {
         "JOB-OS-01": {
@@ -15,7 +56,7 @@
         },
         "JOB-OS-04": {
             "file": "job-os-04-smart.json",
-            "status": "skipped"
+            "status": "ok"
         }
     },
     "key_metrics": {
@@ -23,13 +64,26 @@
         "cron_d_files_count": 1,
         "failed_services_count": 2,
         "kernel_errors_count": 39,
-        "load_1m": "1.50",
-        "memory_available_mb": 8187,
+        "load_1m": "2.81",
+        "memory_available_mb": 7829,
         "memory_total_mb": 15946,
         "readonly_filesystems_count": 7,
-        "smart_devices_count": 0
+        "smart_devices_count": 12
+    },
+    "next_actions": [
+        "Mo cac file job co status warning/critical trong thu muc host nay."
+    ],
+    "result": {
+        "action_required": true,
+        "status_label": "WARNING - OS co diem can kiem tra"
     },
     "status": {
         "overall": "warning"
-    }
+    },
+    "summary": [
+        "JOB-OS-01 resources=ok",
+        "JOB-OS-02 event_logs=warning",
+        "JOB-OS-03 cron_jobs=ok",
+        "JOB-OS-04 smart=ok"
+    ]
 }

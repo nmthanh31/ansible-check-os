@@ -1,0 +1,110 @@
+---
+# Role nay duoc chay truoc cac job kiem tra.
+# Logic co y don gian:
+# 1. Check command can dung da co chua.
+# 2. Neu thieu thi cai package tuong ung.
+
+- name: TOOL-PREREQ | Select package map for current OS family
+  ansible.builtin.set_fact:
+    tool_prereq_packages: >-
+      {{
+        tool_prereq_packages_debian
+        if ansible_os_family == 'Debian'
+        else (
+          tool_prereq_packages_redhat
+          if ansible_os_family == 'RedHat'
+          else {}
+        )
+      }}
+  tags:
+    - always
+
+- name: TOOL-PREREQ | Check OS commands
+  ansible.builtin.shell: |
+    missing=""
+    for cmd in {{ tool_prereq_os_commands | join(' ') }}; do
+      command -v "$cmd" >/dev/null 2>&1 || missing="$missing $cmd"
+    done
+    echo "$missing"
+  args:
+    executable: /bin/bash
+  register: tool_prereq_os_missing_cmd
+  changed_when: false
+  failed_when: false
+  tags:
+    - prepare_tools
+    - tool_check
+    - tool_install
+    - os_tools
+
+- name: TOOL-PREREQ | Install OS tool packages when missing
+  ansible.builtin.package:
+    name: "{{ tool_prereq_packages.get('os', []) }}"
+    state: present
+  when:
+    - ((tool_prereq_os_missing_cmd.stdout | default('')).split() | length) > 0
+    - tool_prereq_packages.get('os', []) | length > 0
+  tags:
+    - prepare_tools
+    - tool_install
+    - os_tools
+
+- name: TOOL-PREREQ | Check cron command
+  ansible.builtin.shell: |
+    missing=""
+    for cmd in {{ tool_prereq_cron_commands | join(' ') }}; do
+      command -v "$cmd" >/dev/null 2>&1 || missing="$missing $cmd"
+    done
+    echo "$missing"
+  args:
+    executable: /bin/bash
+  register: tool_prereq_cron_missing_cmd
+  changed_when: false
+  failed_when: false
+  tags:
+    - prepare_tools
+    - tool_check
+    - tool_install
+    - cron_tools
+
+- name: TOOL-PREREQ | Install cron packages when missing
+  ansible.builtin.package:
+    name: "{{ tool_prereq_packages.get('cron', []) }}"
+    state: present
+  when:
+    - ((tool_prereq_cron_missing_cmd.stdout | default('')).split() | length) > 0
+    - tool_prereq_packages.get('cron', []) | length > 0
+  tags:
+    - prepare_tools
+    - tool_install
+    - cron_tools
+
+- name: TOOL-PREREQ | Check SMART command
+  ansible.builtin.shell: |
+    missing=""
+    for cmd in {{ tool_prereq_smart_commands | join(' ') }}; do
+      command -v "$cmd" >/dev/null 2>&1 || missing="$missing $cmd"
+    done
+    echo "$missing"
+  args:
+    executable: /bin/bash
+  register: tool_prereq_smart_missing_cmd
+  changed_when: false
+  failed_when: false
+  tags:
+    - prepare_tools
+    - tool_check
+    - tool_install
+    - smart_tools
+
+- name: TOOL-PREREQ | Install SMART packages when missing
+  ansible.builtin.package:
+    name: "{{ tool_prereq_packages.get('smart', []) }}"
+    state: present
+  when:
+    - ((tool_prereq_smart_missing_cmd.stdout | default('')).split() | length) > 0
+    - tool_prereq_packages.get('smart', []) | length > 0
+  tags:
+    - prepare_tools
+    - tool_install
+    - smart_tools

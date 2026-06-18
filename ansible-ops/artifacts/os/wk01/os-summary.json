@@ -1,4 +1,43 @@
 {
+    "highlights": {
+        "error_patterns_sample": [
+            "Jun 17 15:20:08 Kubernetes-worker01 systemd[1]: cri-containerd-0c3953d43dd0c808704bd4acb2a210c8e7111341839df1f78dfd2de9b311922b.scope: Deactivated successfully.",
+            "Jun 17 15:20:08 Kubernetes-worker01 systemd[1]: cri-containerd-0c3953d43dd0c808704bd4acb2a210c8e7111341839df1f78dfd2de9b311922b.scope: Consumed 1min 29.723s CPU time.",
+            "Jun 17 15:20:08 Kubernetes-worker01 systemd[1]: cri-containerd-16949eb308b7346853dae994e617293375d5997ab1e34f8d031273cec849887f.scope: Deactivated successfully.",
+            "Jun 17 15:20:08 Kubernetes-worker01 systemd[1]: cri-containerd-16949eb308b7346853dae994e617293375d5997ab1e34f8d031273cec849887f.scope: Consumed 1.300s CPU time.",
+            "Jun 17 15:20:08 Kubernetes-worker01 systemd[1]: run-k3s-containerd-io.containerd.runtime.v2.task-k8s.io-16949eb308b7346853dae994e617293375d5997ab1e34f8d031273cec849887f-rootfs.mount: Deactivated successfully."
+        ],
+        "failed_services_sample": [
+            "UNIT LOAD ACTIVE SUB DESCRIPTION",
+            "0 loaded units listed."
+        ],
+        "smart_devices": [
+            "/dev/sda -d scsi # /dev/sda, SCSI device",
+            "/dev/sdb -d scsi # /dev/sdb, SCSI device",
+            "/dev/sdc -d scsi # /dev/sdc, SCSI device",
+            "/dev/sdd -d scsi # /dev/sdd, SCSI device",
+            "/dev/sde -d scsi # /dev/sde, SCSI device",
+            "/dev/sdf -d scsi # /dev/sdf, SCSI device",
+            "/dev/sdg -d scsi # /dev/sdg, SCSI device",
+            "/dev/sdh -d scsi # /dev/sdh, SCSI device",
+            "/dev/sdi -d scsi # /dev/sdi, SCSI device",
+            "/dev/sdj -d scsi # /dev/sdj, SCSI device"
+        ],
+        "top_cpu_processes": [
+            " 264287 10001    adapter         76.7  5.4",
+            "1048264 root     containerd      52.8  0.8",
+            "1048786 root     kubelet         10.1  0.8",
+            "2572418 root     longhorn-instan  5.4  0.2",
+            "2311675 setup    systemd          4.4  0.0"
+        ],
+        "top_memory_processes": [
+            " 264287 10001    adapter         76.7  5.5",
+            " 531520 setup    java             0.3  4.2",
+            "3776544 root     rancher          3.5  3.3",
+            " 851429 root     longhorn-manage  2.4  2.0",
+            "1048786 root     kubelet         10.1  0.8"
+        ]
+    },
     "host": "wk01",
     "jobs": {
         "JOB-OS-01": {
@@ -15,7 +54,7 @@
         },
         "JOB-OS-04": {
             "file": "job-os-04-smart.json",
-            "status": "skipped"
+            "status": "ok"
         }
     },
     "key_metrics": {
@@ -23,13 +62,26 @@
         "cron_d_files_count": 1,
         "failed_services_count": 2,
         "kernel_errors_count": 39,
-        "load_1m": "3.98",
-        "memory_available_mb": 9333,
+        "load_1m": "17.81",
+        "memory_available_mb": 9347,
         "memory_total_mb": 15946,
         "readonly_filesystems_count": 7,
-        "smart_devices_count": 0
+        "smart_devices_count": 10
+    },
+    "next_actions": [
+        "Mo cac file job co status warning/critical trong thu muc host nay."
+    ],
+    "result": {
+        "action_required": true,
+        "status_label": "WARNING - OS co diem can kiem tra"
     },
     "status": {
         "overall": "warning"
-    }
+    },
+    "summary": [
+        "JOB-OS-01 resources=ok",
+        "JOB-OS-02 event_logs=warning",
+        "JOB-OS-03 cron_jobs=ok",
+        "JOB-OS-04 smart=ok"
+    ]
 }

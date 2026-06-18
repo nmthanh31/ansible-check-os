@@ -1,4 +1,14 @@
 ---
+- import_playbook: prepare_tools.yml
+  tags:
+    - prepare_tools
+
 - import_playbook: check_os.yml
+  tags:
+    - os
+    - checks
 
 - import_playbook: check_kubernetes.yml
+  tags:
+    - kubernetes
+    - checks

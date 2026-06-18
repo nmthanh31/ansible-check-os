@@ -1,29 +1,37 @@
 {
     "findings": [],
+    "highlights": {
+        "skipped_reasons": [],
+        "smart_devices": [
+            "/dev/sda -d scsi # /dev/sda, SCSI device"
+        ],
+        "smart_findings": []
+    },
     "host": "cp01",
     "job": "JOB-OS-04",
     "metrics": {
-        "devices_count": 0,
+        "devices_count": 1,
         "findings_count": 0,
-        "should_run": false,
-        "skipped_count": 1,
-        "smartctl_available": false
+        "should_run": true,
+        "skipped_count": 0,
+        "smartctl_available": true
     },
     "name": "Ki\u1ec3m tra SMART",
-    "skipped": [
-        {
-            "check": "os.smart.smartctl_missing",
-            "evidence": [
-                "virtualization=vmware",
-                "smart_devices=0"
-            ],
-            "job": "JOB-OS-04",
-            "message": "smartctl is not installed",
-            "severity": "skipped",
-            "target": "cp01"
-        }
+    "next_actions": [
+        "Khong can hanh dong."
     ],
+    "result": {
+        "action_required": false,
+        "status_label": "OK - SMART khong phat hien loi nghiem trong"
+    },
+    "skipped": [],
     "status": {
-        "overall": "skipped"
-    }
+        "overall": "ok"
+    },
+    "summary": [
+        "smartctl_available=True",
+        "should_run=True",
+        "devices=1",
+        "findings=0, skipped=0"
+    ]
 }

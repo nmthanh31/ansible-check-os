@@ -5,7 +5,7 @@
   gather_facts: false
 
   roles:
-    - role: k8s_checks
+    - role: ../roles/k8s_checks
       tags:
         - kubernetes
         - checks

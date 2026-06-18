@@ -1,0 +1,43 @@
+---
+# prepare_tools chi lam mot viec: cong cu nao chua co thi cai package tuong ung.
+
+# Cac nhom command can cho cac job.
+tool_prereq_os_commands:
+  - nproc
+  - free
+  - df
+  - findmnt
+  - awk
+  - ps
+  - journalctl
+  - systemctl
+
+tool_prereq_cron_commands:
+  - crontab
+
+tool_prereq_smart_commands:
+  - smartctl
+
+# Package theo tung nhom tren Ubuntu/Debian.
+tool_prereq_packages_debian:
+  os:
+    - coreutils
+    - procps
+    - util-linux
+    - gawk
+  cron:
+    - cron
+  smart:
+    - smartmontools
+
+# Package theo tung nhom tren RHEL/CentOS/Rocky/Alma.
+tool_prereq_packages_redhat:
+  os:
+    - coreutils
+    - procps-ng
+    - util-linux
+    - gawk
+  cron:
+    - cronie
+  smart:
+    - smartmontools

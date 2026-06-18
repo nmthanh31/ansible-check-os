@@ -5,7 +5,7 @@
   gather_facts: false
 
   roles:
-    - role: os_checks
+    - role: ../roles/os_checks
       tags:
         - os
         - checks

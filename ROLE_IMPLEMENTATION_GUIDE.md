@@ -2392,3 +2392,155 @@ Khi phát triển thêm logic phân tích (parse finding từ raw data), nên th
 7. **Viết JOB-OS-03 và JOB-OS-04** → ít ngưỡng hơn, chủ yếu kiểm kê.
 8. **Hoàn thiện save_report.yml** → đảm bảo status tổng hợp chính xác.
 9. **Chạy toàn bộ trên môi trường lab** → xem báo cáo JSON thực tế.
+---
+
+## 10. Tags va cach chay rieng le
+
+Phan nay bo sung cho tat ca role hien tai. Muc tieu cua tag la cho phep chay
+rieng tung nhom cong viec khi can test nhanh, debug loi, hoac chi muon cai mot
+nhom tool.
+
+### 10.1 Nguyen tac gan tag
+
+- Tag cap playbook dung de chay nhom lon: `prepare_tools`, `os`, `kubernetes`, `checks`.
+- Tag cap job dung de chay tung job: `job_os_01`, `job_k8s_01`, ...
+- Tag theo ten nghiep vu dung de doc de hieu hon: `os_resources`, `k8s_events`, `smart_tools`.
+- `save_report.yml` duoc gan tag `always`, nen khi chay rieng mot job, task ghi report van chay.
+- `prepare_tools` khong tao report JSON. Role nay chi check command, neu thieu thi cai package tuong ung.
+
+### 10.2 Tags cua prepare_tools
+
+| Tag | Tac dung |
+|---|---|
+| `prepare_tools` | Chay toan bo role chuan bi cong cu |
+| `tool_check` | Chi chay task check command, khong cai package |
+| `tool_install` | Chay check command va cai package neu thieu |
+| `os_tools` | Cong cu OS chung: `nproc`, `free`, `df`, `findmnt`, `awk`, `ps`, `journalctl`, `systemctl` |
+| `cron_tools` | Cong cu cron: `crontab` |
+| `smart_tools` | Cong cu SMART: `smartctl` |
+
+```bash
+# Chay toan bo prepare_tools
+ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
+  --ask-vault-pass -v
+
+# Chi check command, khong cai
+ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
+  --ask-vault-pass --tags tool_check -v
+
+# Chi chuan bi smartctl cho JOB-OS-04
+ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
+  --ask-vault-pass --tags smart_tools -v
+```
+
+### 10.3 Tags cua OS checks
+
+| Tag | Tac dung |
+|---|---|
+| `os` | Chay toan bo role OS khi dung `check_all.yml` |
+| `checks` | Chay cac role kiem tra |
+| `job_os_01` / `os_resources` | Chay `JOB-OS-01` - tai nguyen node |
+| `job_os_02` / `os_event_logs` | Chay `JOB-OS-02` - event log OS |
+| `job_os_03` / `os_cron_jobs` | Chay `JOB-OS-03` - cron job OS |
+| `job_os_04` / `os_smart` | Chay `JOB-OS-04` - SMART |
+| `os_report` | Chay phan ghi report OS |
+
+```bash
+# Chay tat ca job OS
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_os.yml \
+  --ask-vault-pass -v
+
+# Chi chay JOB-OS-01
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_os.yml \
+  --ask-vault-pass --tags job_os_01 -v
+
+# Chi chay JOB-OS-04 SMART
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_os.yml \
+  --ask-vault-pass --tags job_os_04 -v
+```
+
+### 10.4 Tags cua Kubernetes checks
+
+| Tag | Tac dung |
+|---|---|
+| `kubernetes` | Chay toan bo role Kubernetes khi dung `check_all.yml` |
+| `checks` | Chay cac role kiem tra |
+| `job_k8s_01` / `k8s_resources` | Chay `JOB-K8S-01` - tai nguyen cluster |
+| `job_k8s_02` / `k8s_events` | Chay `JOB-K8S-02` - event toan cum |
+| `job_k8s_03` / `k8s_alerts` | Chay `JOB-K8S-03` - alert |
+| `k8s_report` | Chay phan ghi report Kubernetes |
+
+```bash
+# Chay tat ca job Kubernetes
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_kubernetes.yml \
+  --ask-vault-pass -v
+
+# Chi chay JOB-K8S-01
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_kubernetes.yml \
+  --ask-vault-pass --tags job_k8s_01 -v
+
+# Chay JOB-K8S-01 va JOB-K8S-02 de lay du ngu canh cho event/resource
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_kubernetes.yml \
+  --ask-vault-pass --tags job_k8s_01,job_k8s_02 -v
+```
+
+Luu y: `JOB-K8S-03` sinh alert dua tren bien duoc tao tu `JOB-K8S-01` va
+`JOB-K8S-02`. Neu chi chay rieng `job_k8s_03`, report co the thieu ngu canh
+node/pod/event.
+
+### 10.5 Chay tat ca hoac chay theo nhom tu check_all.yml
+
+`check_all.yml` import theo thu tu:
+
+```yaml
+- import_playbook: prepare_tools.yml
+  tags:
+    - prepare_tools
+
+- import_playbook: check_os.yml
+  tags:
+    - os
+    - checks
+
+- import_playbook: check_kubernetes.yml
+  tags:
+    - kubernetes
+    - checks
+```
+
+```bash
+# Chay tat ca: prepare tools + OS + Kubernetes
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_all.yml \
+  --ask-vault-pass -v
+
+# Chi chay prepare_tools tu check_all
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_all.yml \
+  --ask-vault-pass --tags prepare_tools -v
+
+# Chi chay OS tu check_all
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_all.yml \
+  --ask-vault-pass --tags os -v
+
+# Chi chay Kubernetes tu check_all
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_all.yml \
+  --ask-vault-pass --tags kubernetes -v
+
+# Chay ca OS va Kubernetes, bo qua prepare_tools
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_all.yml \
+  --ask-vault-pass --tags checks -v
+```
+
+### 10.6 Cach them tag cho job moi
+
+Khi them mot job moi vao role, them tag ngay tai `tasks/main.yml`:
+
+```yaml
+- name: JOB-OS-05 - ten job moi
+  ansible.builtin.import_tasks: job_os_05_new_check.yml
+  tags:
+    - job_os_05
+    - os_new_check
+```
+
+Neu job co report rieng, dam bao `save_report.yml` doc bien bang `default(...)`
+de khi chay tag rieng cac job khac khong lam report bi loi.

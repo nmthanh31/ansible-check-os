@@ -35,6 +35,35 @@
             if (k8s_resource_skipped | default([]) | length) > 0
             else 'ok'
           }}
+      result:
+        status_label: >-
+          {{
+            'WARNING - resource metrics bi thieu mot phan'
+            if (k8s_resource_skipped | default([]) | length) > 0
+            else 'OK - tai nguyen Kubernetes doc duoc'
+          }}
+        action_required: "{{ (k8s_resource_skipped | default([]) | length) > 0 }}"
+      summary:
+        - "nodes={{ (k8s_resource_metrics | default({})).get('nodes_total', 0) }}"
+        - "pods={{ (k8s_resource_metrics | default({})).get('pods_total', 0) }}/capacity={{ (k8s_resource_metrics | default({})).get('pods_capacity_total', 0) }}"
+        - "running={{ (k8s_resource_metrics | default({})).get('pods_running', 0) }}, pending={{ (k8s_resource_metrics | default({})).get('pods_pending', 0) }}, failed={{ (k8s_resource_metrics | default({})).get('pods_failed', 0) }}"
+        - "metrics_api_nodes={{ (k8s_resource_metrics | default({})).get('metrics_api_top_nodes_available', false) }}, metrics_api_pods={{ (k8s_resource_metrics | default({})).get('metrics_api_top_pods_available', false) }}"
+      highlights:
+        top_cpu_nodes: "{{ ((k8s_resource_raw | default({})).get('metrics_api', {}).get('top_nodes_by_cpu', []))[:10] }}"
+        top_memory_nodes: "{{ ((k8s_resource_raw | default({})).get('metrics_api', {}).get('top_nodes_by_memory', []))[:10] }}"
+        top_cpu_pods: "{{ ((k8s_resource_raw | default({})).get('metrics_api', {}).get('top_pods_by_cpu', []))[:20] }}"
+        top_memory_pods: "{{ ((k8s_resource_raw | default({})).get('metrics_api', {}).get('top_pods_by_memory', []))[:20] }}"
+        top_nodes_truncated: "{{ (((k8s_resource_raw | default({})).get('metrics_api', {}).get('top_nodes_by_cpu', [])) | length) > 10 }}"
+        top_pods_truncated: "{{ (((k8s_resource_raw | default({})).get('metrics_api', {}).get('top_pods_by_cpu', [])) | length) > 20 }}"
+        metrics_api_errors:
+          nodes: "{{ (k8s_resource_raw | default({})).get('metrics_api', {}).get('top_nodes_error', []) }}"
+          pods: "{{ (k8s_resource_raw | default({})).get('metrics_api', {}).get('top_pods_error', []) }}"
+      next_actions: >-
+        {{
+          ['Kiem tra Metrics Server hoac fallback runtime stats neu metrics_api_* = false.']
+          if (k8s_resource_skipped | default([]) | length) > 0
+          else ['Khong can hanh dong.']
+        }}
       metrics:
         # Đây là các số liệu chính để giám sát nhanh.
         nodes_total: "{{ (k8s_resource_metrics | default({})).get('nodes_total', 0) }}"
@@ -47,7 +76,9 @@
         pods_succeeded: "{{ (k8s_resource_metrics | default({})).get('pods_succeeded', 0) }}"
         metrics_api_top_nodes_available: "{{ (k8s_resource_metrics | default({})).get('metrics_api_top_nodes_available', false) }}"
         metrics_api_top_pods_available: "{{ (k8s_resource_metrics | default({})).get('metrics_api_top_pods_available', false) }}"
-      findings: "{{ k8s_resource_findings | default([]) }}"
+      findings: "{{ (k8s_resource_findings | default([]))[:20] }}"
+      findings_total: "{{ k8s_resource_findings | default([]) | length }}"
+      findings_truncated: "{{ (k8s_resource_findings | default([]) | length) > 20 }}"
       skipped: "{{ k8s_resource_skipped | default([]) }}"
   changed_when: false
 
@@ -69,11 +100,44 @@
               else 'ok'
             )
           }}
+      result:
+        status_label: >-
+          {{
+            'WARNING - cluster co warning event'
+            if (k8s_event_findings | default([]) | length) > 0
+            else (
+              'SKIPPED - khong doc duoc event toan cum'
+              if (k8s_event_skipped | default([]) | length) > 0
+              else 'OK - khong thay warning event can luu y'
+            )
+          }}
+        action_required: "{{ (k8s_event_findings | default([]) | length) > 0 }}"
+      summary:
+        - "warning_events={{ k8s_warning_events | default([]) | length }}"
+        - "findings={{ k8s_event_findings | default([]) | length }}"
+        - "skipped={{ k8s_event_skipped | default([]) | length }}"
+      highlights:
+        warning_events_sample: "{{ (k8s_event_findings | default([]))[:20] }}"
+        warning_events_total: "{{ k8s_event_findings | default([]) | length }}"
+        warning_events_truncated: "{{ (k8s_event_findings | default([]) | length) > 20 }}"
+        skipped_reasons: "{{ k8s_event_skipped | default([]) }}"
+      next_actions: >-
+        {{
+          ['Mo findings de xem namespace/object/reason dang phat sinh warning event.']
+          if (k8s_event_findings | default([]) | length) > 0
+          else (
+            ['Kiem tra quyen kubectl/kubeconfig tren control-plane.']
+            if (k8s_event_skipped | default([]) | length) > 0
+            else ['Khong can hanh dong.']
+          )
+        }}
       metrics:
         warning_events: "{{ k8s_warning_events | default([]) | length }}"
         findings_total: "{{ k8s_event_findings | default([]) | length }}"
         skipped_total: "{{ k8s_event_skipped | default([]) | length }}"
-      findings: "{{ k8s_event_findings | default([]) }}"
+      findings: "{{ (k8s_event_findings | default([]))[:20] }}"
+      findings_total: "{{ k8s_event_findings | default([]) | length }}"
+      findings_truncated: "{{ (k8s_event_findings | default([]) | length) > 20 }}"
       skipped: "{{ k8s_event_skipped | default([]) }}"
   changed_when: false
 
@@ -95,12 +159,42 @@
               else 'ok'
             )
           }}
+      result:
+        status_label: >-
+          {{
+            'CRITICAL - co alert nghiem trong'
+            if ((k8s_generated_alerts | default([])) | selectattr('severity', 'equalto', 'critical') | list | length) > 0
+            else (
+              'WARNING - co alert can kiem tra'
+              if (k8s_generated_alerts | default([]) | length) > 0
+              else 'OK - khong co alert noi bo'
+            )
+          }}
+        action_required: "{{ (k8s_generated_alerts | default([]) | length) > 0 }}"
+      summary:
+        - "generated_alerts={{ k8s_generated_alerts | default([]) | length }}"
+        - "critical={{ (k8s_generated_alerts | default([]) | selectattr('severity', 'equalto', 'critical') | list) | length }}"
+        - "warning={{ (k8s_generated_alerts | default([]) | selectattr('severity', 'equalto', 'warning') | list) | length }}"
+        - "external_alerts={{ k8s_external_alerts | default([]) | length }}"
+      highlights:
+        critical_alerts: "{{ (((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([]))) | selectattr('severity', 'equalto', 'critical') | list)[:20] }}"
+        warning_alerts_sample: "{{ (((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([]))) | selectattr('severity', 'equalto', 'warning') | list)[:20] }}"
+        alerts_total: "{{ ((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([]))) | length }}"
+        alerts_truncated: "{{ (((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([]))) | length) > 20 }}"
+      next_actions: >-
+        {{
+          ['Xu ly critical truoc; neu chi warning thi uu tien FailedCreate, Unhealthy, pod Failed.']
+          if (k8s_generated_alerts | default([]) | length) > 0
+          else ['Khong can hanh dong.']
+        }}
       metrics:
         generated_alerts: "{{ k8s_generated_alerts | default([]) | length }}"
         external_alerts: "{{ k8s_external_alerts | default([]) | length }}"
         critical_alerts: "{{ (k8s_generated_alerts | default([]) | selectattr('severity', 'equalto', 'critical') | list) | length }}"
         warning_alerts: "{{ (k8s_generated_alerts | default([]) | selectattr('severity', 'equalto', 'warning') | list) | length }}"
-      alerts: "{{ k8s_generated_alerts | default([]) + k8s_external_alerts | default([]) }}"
+      alerts: "{{ ((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([])))[:20] }}"
+      alerts_total: "{{ ((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([]))) | length }}"
+      alerts_truncated: "{{ (((k8s_generated_alerts | default([])) + (k8s_external_alerts | default([]))) | length) > 20 }}"
   changed_when: false
 
 - name: Kubernetes report | Add raw data to per-job reports when debug is enabled
@@ -129,6 +223,40 @@
               else 'ok'
             )
           }}
+      result:
+        status_label: >-
+          {{
+            'CRITICAL - Kubernetes co alert nghiem trong'
+            if k8s_job_03_report.get('status', {}).get('overall') == 'critical'
+            else (
+              'WARNING - Kubernetes co diem can kiem tra'
+              if k8s_job_01_report.get('status', {}).get('overall') == 'warning'
+                 or k8s_job_02_report.get('status', {}).get('overall') in ['warning', 'skipped']
+                 or k8s_job_03_report.get('status', {}).get('overall') == 'warning'
+              else 'OK - Kubernetes nhin tong quan binh thuong'
+            )
+          }}
+        action_required: >-
+          {{
+            k8s_job_01_report.get('status', {}).get('overall') == 'warning'
+            or k8s_job_02_report.get('status', {}).get('overall') in ['warning', 'skipped']
+            or k8s_job_03_report.get('status', {}).get('overall') in ['warning', 'critical']
+          }}
+      summary:
+        - "JOB-K8S-01 resources={{ k8s_job_01_report.get('status', {}).get('overall', 'unknown') }}"
+        - "JOB-K8S-02 events={{ k8s_job_02_report.get('status', {}).get('overall', 'unknown') }}"
+        - "JOB-K8S-03 alerts={{ k8s_job_03_report.get('status', {}).get('overall', 'unknown') }}"
+        - "nodes={{ k8s_job_01_report.get('metrics', {}).get('nodes_total', 0) }}, pods={{ k8s_job_01_report.get('metrics', {}).get('pods_total', 0) }}"
+      next_actions: >-
+        {{
+          ['Mo file job co status warning/critical; uu tien job-k8s-03-alerts.json.']
+          if (
+            k8s_job_01_report.get('status', {}).get('overall') == 'warning'
+            or k8s_job_02_report.get('status', {}).get('overall') in ['warning', 'skipped']
+            or k8s_job_03_report.get('status', {}).get('overall') in ['warning', 'critical']
+          )
+          else ['Khong can hanh dong.']
+        }}
       jobs:
         JOB-K8S-01:
           status: "{{ k8s_job_01_report.get('status', {}).get('overall', 'unknown') }}"
@@ -147,6 +275,14 @@
         warning_events: "{{ k8s_job_02_report.get('metrics', {}).get('warning_events', 0) }}"
         generated_alerts: "{{ k8s_job_03_report.get('metrics', {}).get('generated_alerts', 0) }}"
         critical_alerts: "{{ k8s_job_03_report.get('metrics', {}).get('critical_alerts', 0) }}"
+      highlights:
+        top_cpu_nodes: "{{ k8s_job_01_report.get('highlights', {}).get('top_cpu_nodes', []) }}"
+        top_memory_nodes: "{{ k8s_job_01_report.get('highlights', {}).get('top_memory_nodes', []) }}"
+        top_cpu_pods: "{{ (k8s_job_01_report.get('highlights', {}).get('top_cpu_pods', []))[:10] }}"
+        top_memory_pods: "{{ (k8s_job_01_report.get('highlights', {}).get('top_memory_pods', []))[:10] }}"
+        warning_events_sample: "{{ (k8s_job_02_report.get('highlights', {}).get('warning_events_sample', []))[:10] }}"
+        critical_alerts: "{{ k8s_job_03_report.get('highlights', {}).get('critical_alerts', []) }}"
+        warning_alerts_sample: "{{ (k8s_job_03_report.get('highlights', {}).get('warning_alerts_sample', []))[:10] }}"
   changed_when: false
 
 - name: Kubernetes report | Save JOB-K8S-01 report

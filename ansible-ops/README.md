@@ -1,31 +1,75 @@
 # Ansible Checks
 
-Khung dự án hiện tập trung vào kiểm tra OS và Kubernetes cho 6 VM trong môi
-trường `lab`.
+Khung du an dung de kiem tra OS va Kubernetes cho cac VM trong moi truong `lab`.
 
-Nguồn danh sách job: `../list-job.md`.
+Nguon danh sach job: `../list-job.md`.
 
-## Luồng chính
+## Luong chinh
 
 ```text
 Inventory
+  -> prepare_tools.yml
+     -> roles/tool_prerequisites
+        -> Kiem tra/cai cong cu can thiet cho cac job sau
   -> check_os.yml
      -> roles/os_checks
-        -> JOB-OS-01: Kiểm tra tài nguyên node
-        -> JOB-OS-02: Kiểm tra event log OS
-        -> JOB-OS-03: Kiểm tra cron job OS
-        -> JOB-OS-04: Kiểm tra SMART
+        -> JOB-OS-01: Kiem tra tai nguyen node
+        -> JOB-OS-02: Kiem tra event log OS
+        -> JOB-OS-03: Kiem tra cron job OS
+        -> JOB-OS-04: Kiem tra SMART
   -> check_kubernetes.yml
      -> roles/k8s_checks
-        -> JOB-K8S-01: Kiểm tra tài nguyên
-        -> JOB-K8S-02: Kiểm tra event toàn cụm
-        -> JOB-K8S-03: Kiểm tra và tạo cảnh báo
-  -> Report
+        -> JOB-K8S-01: Kiem tra tai nguyen
+        -> JOB-K8S-02: Kiem tra event toan cum
+        -> JOB-K8S-03: Kiem tra va tao canh bao
+  -> artifacts/
 ```
 
-Các job chỉ đọc dữ liệu và tạo báo cáo, không thay đổi cấu hình hệ thống.
+`check_*` chi doc du lieu va tao bao cao, khong thay doi cau hinh he thong.
+Rieng `prepare_tools.yml` co the cai package thieu, nen duoc tach rieng va chay
+co chu dich truoc khi kiem tra.
 
-## Cây thư mục chính
+## Playbook su dung
+
+| Playbook | Muc dich |
+|---|---|
+| `playbooks/prepare_tools.yml` | Kiem tra/cai cong cu can thiet truoc khi chay job |
+| `playbooks/check_os.yml` | Chay cac job OS |
+| `playbooks/check_kubernetes.yml` | Chay cac job Kubernetes |
+| `playbooks/check_all.yml` | Chay toan bo job kiem tra OS va Kubernetes |
+
+`check_kubernetes.yml` chi chay tren node dau tien cua group
+`kubernetes_control_plane`, vi chi control-plane moi co `kubectl`/kubeconfig de
+goi Kubernetes API. Cac worker chi duoc truy van qua task delegate khi can du lieu
+runtime nhu `crictl stats`.
+
+## Prepare tools
+
+Chay playbook nay neu job bi skip vi thieu cong cu, vi du `smartctl` cho SMART:
+
+```bash
+ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_ROLES_PATH=roles \
+ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
+--ask-vault-pass -v
+```
+
+Neu chi muon chay cac task check command, khong cai package:
+
+```bash
+ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_ROLES_PATH=roles \
+ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
+--ask-vault-pass --tags tool_check -v
+```
+
+Neu chi muon chuan bi SMART tool:
+
+```bash
+ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_ROLES_PATH=roles \
+ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
+--ask-vault-pass --tags smart_tools -v
+```
+
+## Cay thu muc chinh
 
 ```text
 ansible-ops/
@@ -33,50 +77,22 @@ ansible-ops/
 |-- inventories/
 |   `-- lab/
 |-- playbooks/
+|   |-- prepare_tools.yml
 |   |-- check_all.yml
 |   |-- check_os.yml
 |   `-- check_kubernetes.yml
 |-- roles/
+|   |-- tool_prerequisites/
 |   |-- os_checks/
-|   |   |-- defaults/main.yml
-|   |   `-- tasks/
-|   |       |-- main.yml
-|   |       |-- job_os_01_node_resources.yml
-|   |       |-- job_os_02_event_logs.yml
-|   |       |-- job_os_03_cron_jobs.yml
-|   |       `-- job_os_04_smart.yml
-|   |-- k8s_checks/
-|   |   |-- defaults/main.yml
-|   |   `-- tasks/
-|   |       |-- main.yml
-|   |       |-- job_k8s_01_resources.yml
-|   |       |-- job_k8s_02_events.yml
-|   |       `-- job_k8s_03_alerts.yml
-|   `-- report/
-|-- artifacts/
-`-- docs/
+|   `-- k8s_checks/
+`-- artifacts/
 ```
 
-## Playbook sử dụng
+## Nguyen tac
 
-| Playbook | Mục đích |
-|---|---|
-| `playbooks/check_os.yml` | Chạy các job OS |
-| `playbooks/check_kubernetes.yml` | Chạy các job Kubernetes |
-| `playbooks/check_all.yml` | Chạy toàn bộ job kiểm tra |
-
-`check_kubernetes.yml` chỉ chạy trên node đầu tiên của group
-`kubernetes_control_plane`, vì chỉ control-plane mới có `kubectl`/kubeconfig để
-gọi Kubernetes API. Các worker chỉ được truy vấn qua task delegate khi cần dữ
-liệu runtime như `crictl stats`.
-
-Các playbook `audit_*` và role cũ hiện không còn là luồng chính. Chúng được giữ
-lại để tham khảo hoặc tái sử dụng code khi cần.
-
-## Nguyên tắc
-
-- Dùng `changed_when: false` cho các task kiểm tra.
-- Thiếu Metrics Server hoặc monitoring stack không được làm dừng job.
-- Thiếu `smartctl` hoặc VM không expose SMART phải ghi `skipped`.
-- Credential phải lưu bằng Ansible Vault hoặc secret manager.
-- Không lưu password trong inventory hoặc artifact báo cáo.
+- Dung `changed_when: false` cho cac task chi kiem tra.
+- Thieu Metrics Server hoac monitoring stack khong duoc lam dung job.
+- Thieu `smartctl` hoac VM khong expose SMART phai ghi `skipped`.
+- Neu muon cap cong cu thieu nhu `smartctl`, chay `prepare_tools.yml` truoc.
+- Credential phai luu bang Ansible Vault hoac secret manager.
+- Khong luu password trong inventory hoac artifact bao cao.

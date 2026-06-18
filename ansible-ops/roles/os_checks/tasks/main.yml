@@ -1,23 +1,23 @@
 ---
-- name: JOB-OS-01 - Kiểm tra tài nguyên node
+- name: JOB-OS-01 - check node resources
   ansible.builtin.import_tasks: job_os_01_node_resources.yml
   tags:
     - job_os_01
     - os_resources
 
-- name: JOB-OS-02 - Kiểm tra event log OS
+- name: JOB-OS-02 - check event log OS
   ansible.builtin.import_tasks: job_os_02_event_logs.yml
   tags:
     - job_os_02
     - os_event_logs
 
-- name: JOB-OS-03 - Kiểm tra cron job OS
+- name: JOB-OS-03 - check cron job OS
   ansible.builtin.import_tasks: job_os_03_cron_jobs.yml
   tags:
     - job_os_03
     - os_cron_jobs
 
-- name: JOB-OS-04 - Kiểm tra SMART
+- name: JOB-OS-04 - check SMART
   ansible.builtin.import_tasks: job_os_04_smart.yml
   tags:
     - job_os_04
