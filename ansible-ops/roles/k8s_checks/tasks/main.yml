@@ -16,9 +16,3 @@
   tags:
     - job_k8s_03
     - k8s_alerts
-
-- name: Save Kubernetes check report
-  ansible.builtin.import_tasks: save_report.yml
-  tags:
-    - always
-    - k8s_report

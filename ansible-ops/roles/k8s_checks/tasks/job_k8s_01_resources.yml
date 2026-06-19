@@ -1,197 +1,112 @@
 ---
-# JOB-K8S-01 - Kiểm tra tài nguyên Kubernetes.
-#
-# Job này đọc tài nguyên node/pod trong cluster:
-# - Node status và condition.
-# - Capacity và allocatable.
-# - CPU/RAM usage nếu Metrics Server có sẵn.
-# - Fallback sang crictl stats trên từng node nếu Metrics Server không có.
-# - Request/limit của pod/container.
-#
-# Job chỉ đọc dữ liệu qua kubectl và crictl, không thay đổi cluster.
+# JOB-K8S-01 - Kiem tra tai nguyen Kubernetes.
 
-- name: JOB-K8S-01 | Initialize Kubernetes resource result
-  ansible.builtin.set_fact:
-    # k8s_resource_raw: dữ liệu thô từ kubectl/crictl, chỉ đưa vào report khi bật debug.
-    k8s_resource_raw: {}
-
-    # k8s_resource_findings: danh sách lỗi/cảnh báo do job này tự phát hiện.
-    # Hiện tại report chính dùng metrics, sau này có thể thêm rule request/limit.
-    k8s_resource_findings: []
-
-    # k8s_resource_skipped: các phần không kiểm tra được nhưng không làm fail job,
-    # ví dụ thiếu Metrics Server.
-    k8s_resource_skipped: []
-  changed_when: false
-
-- name: JOB-K8S-01 | Read Kubernetes nodes as JSON
+- name: JOB-K8S-01 | Read nodes
   ansible.builtin.command:
-    # {{ k8s_check_kubectl }}:
-    # - Đường dẫn kubectl trên RKE2, mặc định /var/lib/rancher/rke2/bin/kubectl.
-    #
-    # --kubeconfig {{ k8s_check_kubeconfig }}:
-    # - Chỉ rõ kubeconfig của RKE2, mặc định /etc/rancher/rke2/rke2.yaml.
-    # - Cần vì playbook chạy trên control-plane, không chạy trên worker.
-    #
-    # get nodes -o json:
-    # - Lấy toàn bộ node trong cluster.
-    # - -o json trả dữ liệu có cấu trúc để parse bằng from_json.
-    # - Dữ liệu chứa status.conditions, capacity, allocatable.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} get nodes -o json"
-  # register lưu stdout JSON vào k8s_nodes_json.stdout.
   register: k8s_nodes_json
   changed_when: false
 
-- name: JOB-K8S-01 | Read all pods as JSON
+- name: JOB-K8S-01 | Read pods
   ansible.builtin.command:
-    # get pods -A -o json:
-    # - -A lấy pod ở tất cả namespace.
-    # - -o json giúp đọc request/limit, nodeName, phase, containerStatuses.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} get pods -A -o json"
   register: k8s_pods_json
   changed_when: false
 
-- name: JOB-K8S-01 | Try Metrics API for node usage
+- name: JOB-K8S-01 | Read top nodes by CPU
   ansible.builtin.command:
-    # kubectl top nodes:
-    # - Lấy CPU/RAM usage thực tế theo node.
-    # - Lệnh này cần Metrics Server.
-    #
-    # --no-headers:
-    # - Bỏ dòng tiêu đề, output gọn hơn để parse.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top nodes --sort-by=cpu --no-headers"
-  register: k8s_top_nodes
+  register: k8s_top_nodes_cpu
   changed_when: false
-
-  # Nếu không có Metrics Server, kubectl top sẽ fail với rc != 0.
-  # Không fail job vì vẫn có thể kiểm tra capacity/request/limit.
   failed_when: false
 
-- name: JOB-K8S-01 | Try Metrics API for node memory usage
+- name: JOB-K8S-01 | Read top nodes by memory
   ansible.builtin.command:
-    # Sap xep node theo memory de report biet node nao dang dung RAM cao nhat.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top nodes --sort-by=memory --no-headers"
   register: k8s_top_nodes_memory
   changed_when: false
   failed_when: false
 
-- name: JOB-K8S-01 | Try Metrics API for pod usage
+- name: JOB-K8S-01 | Read top pods by CPU
   ansible.builtin.command:
-    # kubectl top pods -A:
-    # - Lấy CPU/RAM usage thực tế theo pod ở mọi namespace.
-    # - Cần Metrics Server.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top pods -A --sort-by=cpu --no-headers"
-  register: k8s_top_pods
+  register: k8s_top_pods_cpu
   changed_when: false
   failed_when: false
 
-- name: JOB-K8S-01 | Try Metrics API for pod memory usage
+- name: JOB-K8S-01 | Read top pods by memory
   ansible.builtin.command:
-    # Sap xep pod theo memory de report biet pod nao dang dung RAM cao nhat.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} top pods -A --sort-by=memory --no-headers"
   register: k8s_top_pods_memory
   changed_when: false
   failed_when: false
 
-- name: JOB-K8S-01 | Fallback to crictl stats when Metrics API is unavailable
-  ansible.builtin.command:
-    # {{ k8s_check_crictl }}:
-    # - Đường dẫn crictl trên RKE2, mặc định /var/lib/rancher/rke2/bin/crictl.
-    #
-    # crictl stats -o json:
-    # - Đọc usage container trực tiếp từ container runtime trên node.
-    # - -o json trả dữ liệu có cấu trúc.
-    # - Task này delegate sang từng node trong group kubernetes_servers.
-    cmd: "{{ k8s_check_crictl }} stats -o json"
-  # loop qua toàn bộ node vì usage runtime nằm trên từng node, không chỉ cp01.
-  loop: "{{ groups['kubernetes_servers'] | default([]) }}"
-
-  # delegate_to chạy command trên node trong item, dù playbook chính chạy ở cp01.
-  delegate_to: "{{ item }}"
-  register: k8s_crictl_stats
-  changed_when: false
-  failed_when: false
-  # Chỉ fallback crictl khi Metrics API cho pod usage không khả dụng.
-  when: k8s_top_pods.rc != 0
-
-- name: JOB-K8S-01 | Mark Metrics API skipped when unavailable
+- name: JOB-K8S-01 | Build resource facts
   ansible.builtin.set_fact:
-    k8s_resource_skipped: >-
-      {{
-        k8s_resource_skipped
-        + [
-          {
-            'job': 'JOB-K8S-01',
-            'target': 'cluster',
-            'severity': 'skipped',
-            'check': 'k8s.metrics_api',
-            'message': 'Metrics API is unavailable; fallback to crictl stats was attempted',
-            'evidence': [k8s_top_pods.stderr | default('')]
-          }
-        ]
-      }}
-  changed_when: false
-  when: k8s_top_pods.rc != 0
-
-- name: JOB-K8S-01 | Save Kubernetes resource raw result
-  ansible.builtin.set_fact:
-    k8s_resource_raw:
-      # from_json biến stdout JSON thành dict/list để các task sau truy cập được
-      # bằng get('items', []) thay vì parse text.
-      nodes: "{{ k8s_nodes_json.stdout | from_json }}"
-      pods: "{{ k8s_pods_json.stdout | from_json }}"
-      metrics_api:
-        top_nodes_available: "{{ k8s_top_nodes.rc == 0 }}"
-        top_nodes_by_cpu: "{{ k8s_top_nodes.stdout_lines | default([]) }}"
-        top_nodes_by_memory: "{{ k8s_top_nodes_memory.stdout_lines | default([]) }}"
-        top_nodes_error: "{{ k8s_top_nodes.stderr_lines | default([]) }}"
-        top_pods_available: "{{ k8s_top_pods.rc == 0 }}"
-        top_pods_by_cpu: "{{ k8s_top_pods.stdout_lines | default([]) }}"
-        top_pods_by_memory: "{{ k8s_top_pods_memory.stdout_lines | default([]) }}"
-        top_pods_error: "{{ k8s_top_pods.stderr_lines | default([]) }}"
-      runtime_stats:
-        crictl_results: "{{ k8s_crictl_stats.results | default([]) }}"
-      skipped: "{{ k8s_resource_skipped }}"
+    k8s_nodes: "{{ k8s_nodes_json.stdout | from_json }}"
+    k8s_pods: "{{ k8s_pods_json.stdout | from_json }}"
   changed_when: false
 
-- name: JOB-K8S-01 | Initialize compact Kubernetes metrics
+- name: JOB-K8S-01 | Sum pod capacity
   ansible.builtin.set_fact:
-    # k8s_resource_metrics là số liệu gọn để đưa vào report.
-    # Không chứa raw JSON node/pod dài.
-    k8s_resource_metrics:
-      # nodes_total/pods_total là các số chính để report dễ đọc.
-      nodes_total: "{{ (k8s_resource_raw.get('nodes', {}).get('items', [])) | length }}"
-      pods_total: "{{ (k8s_resource_raw.get('pods', {}).get('items', [])) | length }}"
-      # selectattr lọc list pod theo status.phase.
-      pods_running: "{{ (k8s_resource_raw.get('pods', {}).get('items', []) | selectattr('status.phase', 'equalto', 'Running') | list) | length }}"
-      pods_pending: "{{ (k8s_resource_raw.get('pods', {}).get('items', []) | selectattr('status.phase', 'equalto', 'Pending') | list) | length }}"
-      pods_failed: "{{ (k8s_resource_raw.get('pods', {}).get('items', []) | selectattr('status.phase', 'equalto', 'Failed') | list) | length }}"
-      pods_succeeded: "{{ (k8s_resource_raw.get('pods', {}).get('items', []) | selectattr('status.phase', 'equalto', 'Succeeded') | list) | length }}"
-      pods_capacity_total: 0
-      pods_allocatable_total: 0
-      metrics_api_top_nodes_available: "{{ k8s_top_nodes.rc == 0 }}"
-      metrics_api_top_pods_available: "{{ k8s_top_pods.rc == 0 }}"
+    k8s_pods_capacity_total: "{{ (k8s_pods_capacity_total | default(0) | int) + (item.get('status', {}).get('capacity', {}).get('pods', 0) | int) }}"
+    k8s_pods_allocatable_total: "{{ (k8s_pods_allocatable_total | default(0) | int) + (item.get('status', {}).get('allocatable', {}).get('pods', 0) | int) }}"
+  loop: "{{ k8s_nodes.get('items', []) }}"
   changed_when: false
 
-- name: JOB-K8S-01 | Sum pod capacity and allocatable from nodes
+- name: JOB-K8S-01 | Build report
   ansible.builtin.set_fact:
-    # Mỗi node có:
-    # - status.capacity.pods: số pod tối đa node có thể chứa.
-    # - status.allocatable.pods: số pod Kubernetes có thể cấp phát sau khi trừ phần reserved.
-    #
-    # combine(..., recursive=True):
-    # - Tạo bản dict mới bằng cách cập nhật k8s_resource_metrics hiện tại.
-    # - Dùng để cộng dồn pods_capacity_total và pods_allocatable_total qua từng node.
-    k8s_resource_metrics: >-
-      {{
-        k8s_resource_metrics
-        | combine(
-          {
-            'pods_capacity_total': ((k8s_resource_metrics.get('pods_capacity_total', 0) | int) + (item.get('status', {}).get('capacity', {}).get('pods', 0) | int)),
-            'pods_allocatable_total': ((k8s_resource_metrics.get('pods_allocatable_total', 0) | int) + (item.get('status', {}).get('allocatable', {}).get('pods', 0) | int))
-          },
-          recursive=True
-        )
-      }}
-  loop: "{{ k8s_resource_raw.get('nodes', {}).get('items', []) }}"
+    k8s_job_01_report:
+      job: JOB-K8S-01
+      name: Kiem tra tai nguyen Kubernetes
+      host: "{{ inventory_hostname }}"
+      status: "{{ 'warning' if (k8s_top_nodes_cpu.rc != 0 or k8s_top_pods_cpu.rc != 0) else 'ok' }}"
+      message: "{{ 'WARNING - Metrics API khong day du' if (k8s_top_nodes_cpu.rc != 0 or k8s_top_pods_cpu.rc != 0) else 'OK - da thu thap tai nguyen Kubernetes' }}"
+      summary:
+        nodes: "{{ k8s_nodes.get('items', []) | length }}"
+        pods_total: "{{ k8s_pods.get('items', []) | length }}"
+        pods_running: "{{ k8s_pods.get('items', []) | selectattr('status.phase', 'equalto', 'Running') | list | length }}"
+        pods_pending: "{{ k8s_pods.get('items', []) | selectattr('status.phase', 'equalto', 'Pending') | list | length }}"
+        pods_failed: "{{ k8s_pods.get('items', []) | selectattr('status.phase', 'equalto', 'Failed') | list | length }}"
+        pods_capacity_total: "{{ k8s_pods_capacity_total | default(0) }}"
+        pods_allocatable_total: "{{ k8s_pods_allocatable_total | default(0) }}"
+        metrics_api_available: "{{ k8s_top_nodes_cpu.rc == 0 and k8s_top_pods_cpu.rc == 0 }}"
+      highlights:
+        top_cpu_nodes: "{{ k8s_top_nodes_cpu.stdout_lines | default([]) }}"
+        top_memory_nodes: "{{ k8s_top_nodes_memory.stdout_lines | default([]) }}"
+        top_cpu_pods: "{{ (k8s_top_pods_cpu.stdout_lines | default([]))[:20] }}"
+        top_memory_pods: "{{ (k8s_top_pods_memory.stdout_lines | default([]))[:20] }}"
+        metrics_errors:
+          nodes: "{{ k8s_top_nodes_cpu.stderr_lines | default([]) }}"
+          pods: "{{ k8s_top_pods_cpu.stderr_lines | default([]) }}"
+      next_actions: "{{ ['Kiem tra Metrics Server neu metrics_api_available=false.'] if (k8s_top_nodes_cpu.rc != 0 or k8s_top_pods_cpu.rc != 0) else ['Khong can hanh dong.'] }}"
+  changed_when: false
+
+- name: JOB-K8S-01 | Add raw data when enabled
+  ansible.builtin.set_fact:
+    k8s_job_01_report: "{{ k8s_job_01_report | combine({'raw': {'nodes': k8s_nodes, 'pods': k8s_pods}}, recursive=True) }}"
+  changed_when: false
+  when: k8s_check_include_raw | bool
+
+- name: JOB-K8S-01 | Show report
+  ansible.builtin.debug:
+    var: k8s_job_01_report
+  changed_when: false
+
+- name: JOB-K8S-01 | Create local artifact directory
+  ansible.builtin.file:
+    path: "{{ k8s_check_artifact_dir }}/{{ inventory_hostname }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+
+- name: JOB-K8S-01 | Write job report to local artifact
+  ansible.builtin.copy:
+    dest: "{{ k8s_check_artifact_dir }}/{{ inventory_hostname }}/job_k8s_01_resources.json"
+    content: "{{ k8s_job_01_report | to_nice_json }}\n"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
   changed_when: false

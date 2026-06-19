@@ -1,112 +1,75 @@
 ---
-# JOB-K8S-02 - Kiểm tra event toàn cụm.
-#
-# Kubernetes Event thường chỉ được giữ trong thời gian ngắn.
-# Job này đọc event hiện còn trong cluster, lọc Warning event và lưu raw data.
+# JOB-K8S-02 - Kiem tra event toan cum.
 
-- name: JOB-K8S-02 | Initialize Kubernetes event result
-  ansible.builtin.set_fact:
-    # k8s_events_raw: event JSON thô từ Kubernetes API.
-    k8s_events_raw: {}
-
-    # k8s_warning_events: chỉ các event type=Warning, dùng cho finding/alert.
-    k8s_warning_events: []
-
-    # k8s_event_findings: danh sách cảnh báo đọc được từ event.
-    k8s_event_findings: []
-
-    # k8s_event_skipped: lý do không đọc được event nếu kubectl lỗi.
-    k8s_event_skipped: []
-  changed_when: false
-
-- name: JOB-K8S-02 | Read events from all namespaces
+- name: JOB-K8S-02 | Read events
   ansible.builtin.command:
-    # kubectl get events -A -o json:
-    # - -A lấy event ở tất cả namespace.
-    # - -o json trả dữ liệu có cấu trúc, gồm type, reason, message,
-    #   involvedObject, count, firstTimestamp, lastTimestamp.
-    #
-    # Event trong Kubernetes có TTL ngắn, nên đây là snapshot tại thời điểm chạy.
     cmd: "{{ k8s_check_kubectl }} --kubeconfig {{ k8s_check_kubeconfig }} get events -A -o json"
   register: k8s_events_json
   changed_when: false
   failed_when: false
 
-- name: JOB-K8S-02 | Save raw events
+- name: JOB-K8S-02 | Build event facts
   ansible.builtin.set_fact:
-    # Chỉ parse JSON khi kubectl chạy thành công.
-    # Nếu kubectl lỗi, stdout có thể rỗng hoặc không phải JSON, parse sẽ fail.
-    # Khi đó dùng object rỗng {"items": []} để job vẫn tiếp tục.
-    k8s_events_raw: >-
-      {{
-        (k8s_events_json.stdout | default('{"items":[]}', true) | from_json)
-        if k8s_events_json.rc == 0
-        else {'items': []}
-      }}
+    k8s_events: "{{ (k8s_events_json.stdout | default('{\"items\":[]}', true) | from_json) if k8s_events_json.rc == 0 else {'items': []} }}"
   changed_when: false
 
-- name: JOB-K8S-02 | Mark event check skipped when kubectl fails
+- name: JOB-K8S-02 | Extract warning events
   ansible.builtin.set_fact:
-    k8s_event_skipped: >-
-      {{
-        k8s_event_skipped
-        + [
-          {
-            'job': 'JOB-K8S-02',
-            'target': 'cluster',
-            'severity': 'skipped',
-            'check': 'k8s.events.read',
-            'message': 'Cannot read Kubernetes events',
-            'evidence': k8s_events_json.stderr_lines | default([])
-          }
-        ]
-      }}
-  changed_when: false
-  when: k8s_events_json.rc != 0
-
-- name: JOB-K8S-02 | Extract Warning events
-  ansible.builtin.set_fact:
-    # selectattr('type', 'equalto', 'Warning'):
-    # - Lọc event có type Warning.
-    # - Normal event thường là thông tin vận hành bình thường.
-    k8s_warning_events: >-
-      {{
-        k8s_events_raw.get('items', [])
-        | default([])
-        | selectattr('type', 'equalto', 'Warning')
-        | list
-      }}
+    k8s_warning_events: "{{ k8s_events.get('items', []) | selectattr('type', 'equalto', 'Warning') | list }}"
   changed_when: false
 
-- name: JOB-K8S-02 | Create findings from Warning events
+- name: JOB-K8S-02 | Build report
   ansible.builtin.set_fact:
-    k8s_event_findings: >-
-      {{
-        k8s_event_findings
-        + [
-          {
-            'job': 'JOB-K8S-02',
-            # target cố gắng hỗ trợ cả event API cũ và mới:
-            # - API cũ dùng involvedObject.
-            # - API mới có thể dùng regarding.
-            'target': (
-              (item.get('metadata', {}).get('namespace', item.get('namespace', 'default')))
-              ~ '/'
-              ~ (item.get('involvedObject', {}).get('kind', item.get('regarding', {}).get('kind', 'Object')))
-              ~ '/'
-              ~ (item.get('involvedObject', {}).get('name', item.get('regarding', {}).get('name', item.get('metadata', {}).get('name', 'unknown'))))
-            ),
-            'severity': 'warning',
-            'check': 'k8s.event.' ~ item.get('reason', 'warning'),
-            # message là field cũ; note là field trong events.k8s.io/v1.
-            'message': item.get('message', item.get('note', 'Kubernetes warning event')),
-            'evidence': [
-              'reason=' ~ item.get('reason', ''),
-              'count=' ~ (item.get('count', item.get('series', {}).get('count', 1)) | string),
-              'lastTimestamp=' ~ item.get('lastTimestamp', item.get('eventTime', item.get('deprecatedLastTimestamp', '')))
-            ]
-          }
-        ]
-      }}
-  loop: "{{ k8s_warning_events }}"
+    k8s_job_02_report:
+      job: JOB-K8S-02
+      name: Kiem tra event toan cum
+      host: "{{ inventory_hostname }}"
+      status: "{{ 'skipped' if k8s_events_json.rc != 0 else ('warning' if (k8s_warning_events | length) > 0 else 'ok') }}"
+      message: >-
+        {{
+          'SKIPPED - khong doc duoc Kubernetes events'
+          if k8s_events_json.rc != 0
+          else ('WARNING - cluster co Warning events' if (k8s_warning_events | length) > 0 else 'OK - khong thay Warning events')
+        }}
+      summary:
+        warning_events: "{{ k8s_warning_events | length }}"
+      highlights:
+        warning_events_sample: >-
+          {{
+            k8s_warning_events[:20]
+            | map(attribute='metadata')
+            | list
+          }}
+        warning_messages_sample: "{{ k8s_warning_events[:20] | map(attribute='message') | list }}"
+        error: "{{ k8s_events_json.stderr_lines | default([]) }}"
+      next_actions: "{{ ['Mo warning_messages_sample de xem object/reason can xu ly.'] if (k8s_warning_events | length) > 0 else ['Khong can hanh dong.'] }}"
+  changed_when: false
+
+- name: JOB-K8S-02 | Add raw data when enabled
+  ansible.builtin.set_fact:
+    k8s_job_02_report: "{{ k8s_job_02_report | combine({'raw': {'events': k8s_events}}, recursive=True) }}"
+  changed_when: false
+  when: k8s_check_include_raw | bool
+
+- name: JOB-K8S-02 | Show report
+  ansible.builtin.debug:
+    var: k8s_job_02_report
+  changed_when: false
+
+- name: JOB-K8S-02 | Create local artifact directory
+  ansible.builtin.file:
+    path: "{{ k8s_check_artifact_dir }}/{{ inventory_hostname }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+
+- name: JOB-K8S-02 | Write job report to local artifact
+  ansible.builtin.copy:
+    dest: "{{ k8s_check_artifact_dir }}/{{ inventory_hostname }}/job_k8s_02_events.json"
+    content: "{{ k8s_job_02_report | to_nice_json }}\n"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
   changed_when: false

@@ -22,10 +22,11 @@ Inventory
         -> JOB-K8S-01: Kiem tra tai nguyen
         -> JOB-K8S-02: Kiem tra event toan cum
         -> JOB-K8S-03: Kiem tra va tao canh bao
-  -> artifacts/
+  -> terminal output + artifacts/
 ```
 
-`check_*` chi doc du lieu va tao bao cao, khong thay doi cau hinh he thong.
+`check_*` chi doc du lieu, in report ngan ra terminal va ghi JSON report theo tung job
+vao `artifacts/`, khong thay doi cau hinh he thong.
 Rieng `prepare_tools.yml` co the cai package thieu, nen duoc tach rieng va chay
 co chu dich truoc khi kiem tra.
 
@@ -81,11 +82,22 @@ ansible-ops/
 |   |-- check_all.yml
 |   |-- check_os.yml
 |   `-- check_kubernetes.yml
+|-- artifacts/
+|   |-- os/
+|   |   `-- <host>/
+|   |       |-- job_os_01_node_resources.json
+|   |       |-- job_os_02_event_logs.json
+|   |       |-- job_os_03_cron_jobs.json
+|   |       `-- job_os_04_smart.json
+|   `-- k8s/
+|       `-- <control-plane-host>/
+|           |-- job_k8s_01_resources.json
+|           |-- job_k8s_02_events.json
+|           `-- job_k8s_03_alerts.json
 |-- roles/
 |   |-- tool_prerequisites/
 |   |-- os_checks/
 |   `-- k8s_checks/
-`-- artifacts/
 ```
 
 ## Nguyen tac
@@ -95,4 +107,4 @@ ansible-ops/
 - Thieu `smartctl` hoac VM khong expose SMART phai ghi `skipped`.
 - Neu muon cap cong cu thieu nhu `smartctl`, chay `prepare_tools.yml` truoc.
 - Credential phai luu bang Ansible Vault hoac secret manager.
-- Khong luu password trong inventory hoac artifact bao cao.
+- Khong luu password trong inventory.

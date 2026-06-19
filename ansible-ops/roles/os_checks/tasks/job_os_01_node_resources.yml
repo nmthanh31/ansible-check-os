@@ -1,154 +1,121 @@
 ---
-# JOB-OS-01 - Kiểm tra tài nguyên node.
-#
-# File này chỉ đọc thông tin tài nguyên OS trên từng node.
-# Tất cả task đều đặt changed_when: false để Ansible không báo "changed",
-# vì đây là job kiểm tra, không thay đổi hệ thống.
-
-- name: JOB-OS-01 | Initialize result lists
-  ansible.builtin.set_fact:
-    # os_node_resource_findings: danh sách finding sau này sẽ dùng để lưu
-    # warning/critical khi parse raw data theo ngưỡng.
-    os_node_resource_findings: []
-
-    # os_node_resource_raw: nơi gom dữ liệu thô của các lệnh bên dưới.
-    # Lưu raw trước giúp debug dễ hơn trước khi viết logic phân tích.
-    os_node_resource_raw: {}
-  changed_when: false
+# JOB-OS-01 - Kiem tra tai nguyen node.
+# Job nay tu thu thap du lieu va tao report ngan gon cua chinh no.
 
 - name: JOB-OS-01 | Read CPU count
-  # ansible.builtin.command chạy lệnh trực tiếp, không qua shell.
-  # Dùng command khi không cần pipe, wildcard, biến shell hoặc redirect.
-  #
-  # nproc:
-  # - In ra số CPU logical mà Linux nhìn thấy.
-  # - Trên VM, giá trị này tương ứng số vCPU được cấp cho VM.
   ansible.builtin.command: nproc
-
-  # register lưu stdout, stderr, rc... của lệnh vào biến os_cpu_count.
   register: os_cpu_count
   changed_when: false
 
 - name: JOB-OS-01 | Read load average
-  # cat /proc/loadavg:
-  # - Đọc load average từ pseudo-file của kernel.
-  # - 3 số đầu lần lượt là load trung bình 1 phút, 5 phút, 15 phút.
-  # - So sánh load với số vCPU để biết node có quá tải CPU hay không.
   ansible.builtin.command: cat /proc/loadavg
   register: os_loadavg
   changed_when: false
 
 - name: JOB-OS-01 | Read memory and swap
-  # free -m:
-  # - Hiển thị RAM và swap.
-  # - -m chuyển đơn vị sang MiB để người vận hành đọc dễ hơn.
-  # - Cột "available" quan trọng hơn "free" vì Linux dùng RAM làm cache.
   ansible.builtin.command: free -m
   register: os_memory
   changed_when: false
 
 - name: JOB-OS-01 | Read filesystem usage
-  # df -PTh:
-  # - df hiển thị dung lượng filesystem.
-  # - -P dùng POSIX output, mỗi filesystem một dòng, dễ parse hơn.
-  # - -T hiển thị loại filesystem như ext4, xfs, tmpfs.
-  # - -h hiển thị dung lượng dạng dễ đọc như G/M.
   ansible.builtin.command: df -PTh
   register: os_filesystems
   changed_when: false
 
 - name: JOB-OS-01 | Read inode usage
-  # df -Pi:
-  # - -i hiển thị inode thay vì dung lượng block.
-  # - -P giữ output POSIX, dễ parse.
-  # Inode đầy có thể làm filesystem không tạo được file mới dù disk còn trống.
   ansible.builtin.command: df -Pi
   register: os_inodes
   changed_when: false
 
 - name: JOB-OS-01 | Detect read-only filesystems
-  # Dùng shell vì cần pipe sang awk và dùng regex.
-  ansible.builtin.shell: |
-    # findmnt -rn -o TARGET,OPTIONS:
-    # - findmnt đọc danh sách mount hiện tại.
-    # - -r raw output, bỏ ký tự cây để dễ parse.
-    # - -n bỏ header.
-    # - -o TARGET,OPTIONS chỉ in mount point và options.
-    #
-    # awk '$2 ~ /(^|,)ro(,|$)/ {print $0}':
-    # - $2 là cột OPTIONS.
-    # - Regex tìm option ro đúng nghĩa, tránh match nhầm chuỗi có chữ "ro".
-    # - In ra filesystem đang mount read-only.
-    findmnt -rn -o TARGET,OPTIONS | awk '$2 ~ /(^|,)ro(,|$)/ {print $0}'
+  ansible.builtin.shell: findmnt -rn -o TARGET,OPTIONS | awk '$2 ~ /(^|,)ro(,|$)/ {print $0}'
   args:
-    # executable: /bin/bash ép Ansible dùng bash để chạy block shell.
     executable: /bin/bash
   register: os_readonly_filesystems
   changed_when: false
-
-  # Nếu không có filesystem read-only, awk không in gì. Task vẫn nên ok.
-  # failed_when: false bảo đảm job không fail vì output rỗng hoặc command phụ lỗi.
   failed_when: false
 
 - name: JOB-OS-01 | Read top CPU processes
-  ansible.builtin.shell: |
-    # ps -eo pid,user,comm,%cpu,%mem:
-    # - -e lấy toàn bộ process.
-    # - -o chọn cột output: PID, user, command, CPU%, MEM%.
-    #
-    # --sort=-%cpu:
-    # - Sắp xếp giảm dần theo CPU.
-    #
-    # head -n {{ os_check_top_process_count + 1 }}:
-    # - Lấy N process đầu tiên cộng thêm 1 dòng header.
-    # - os_check_top_process_count nằm trong defaults/main.yml.
-    ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | head -n {{ os_check_top_process_count + 1 }}
+  ansible.builtin.shell: ps -eo pid,user,comm,%cpu,%mem --sort=-%cpu | head -n {{ os_check_top_process_count + 1 }}
   args:
     executable: /bin/bash
   register: os_top_cpu_processes
   changed_when: false
 
 - name: JOB-OS-01 | Read top memory processes
-  ansible.builtin.shell: |
-    # Giống task top CPU, nhưng --sort=-%mem sắp xếp theo RAM giảm dần.
-    # Dùng để phát hiện process chiếm nhiều memory trên node.
-    ps -eo pid,user,comm,%cpu,%mem --sort=-%mem | head -n {{ os_check_top_process_count + 1 }}
+  ansible.builtin.shell: ps -eo pid,user,comm,%cpu,%mem --sort=-%mem | head -n {{ os_check_top_process_count + 1 }}
   args:
     executable: /bin/bash
   register: os_top_memory_processes
   changed_when: false
 
-- name: JOB-OS-01 | Save raw node resource result
+- name: JOB-OS-01 | Build report
   ansible.builtin.set_fact:
-    os_node_resource_raw:
-      # stdout là output dạng một chuỗi.
-      cpu_count: "{{ os_cpu_count.stdout }}"
-      loadavg: "{{ os_loadavg.stdout }}"
-
-      # stdout_lines là output đã tách thành list từng dòng.
-      # Dùng stdout_lines cho các lệnh bảng nhiều dòng như free, df, ps.
-      memory: "{{ os_memory.stdout_lines }}"
-      filesystems: "{{ os_filesystems.stdout_lines }}"
-      inodes: "{{ os_inodes.stdout_lines }}"
-      read_only_filesystems: "{{ os_readonly_filesystems.stdout_lines }}"
-      top_cpu_processes: "{{ os_top_cpu_processes.stdout_lines }}"
-      top_memory_processes: "{{ os_top_memory_processes.stdout_lines }}"
+    os_job_01_report:
+      job: JOB-OS-01
+      name: Kiem tra tai nguyen node
+      host: "{{ inventory_hostname }}"
+      status: "{{ 'warning' if (os_readonly_filesystems.stdout_lines | default([]) | length) > 0 else 'ok' }}"
+      message: >-
+        {{
+          'WARNING - node co filesystem read-only can kiem tra'
+          if (os_readonly_filesystems.stdout_lines | default([]) | length) > 0
+          else 'OK - tai nguyen node da duoc thu thap'
+        }}
+      summary:
+        cpu: "{{ os_cpu_count.stdout | int }} vCPU, load={{ os_loadavg.stdout.split()[0] }}/{{ os_loadavg.stdout.split()[1] }}/{{ os_loadavg.stdout.split()[2] }}"
+        memory: "{{ os_memory.stdout_lines[1].split()[6] }}MB available / {{ os_memory.stdout_lines[1].split()[1] }}MB total"
+        swap: "{{ os_memory.stdout_lines[2].split()[2] }}MB used / {{ os_memory.stdout_lines[2].split()[1] }}MB total"
+        filesystems: "{{ (os_filesystems.stdout_lines | length) - 1 }} filesystems, read_only={{ os_readonly_filesystems.stdout_lines | default([]) | length }}"
+      highlights:
+        read_only_filesystems: "{{ os_readonly_filesystems.stdout_lines | default([]) }}"
+        top_cpu_processes: "{{ (os_top_cpu_processes.stdout_lines | default([]))[1:] }}"
+        top_memory_processes: "{{ (os_top_memory_processes.stdout_lines | default([]))[1:] }}"
+      next_actions: >-
+        {{
+          ['Kiem tra ngay cac filesystem read-only trong highlights.read_only_filesystems.']
+          if (os_readonly_filesystems.stdout_lines | default([]) | length) > 0
+          else ['Khong can hanh dong.']
+        }}
   changed_when: false
 
-- name: JOB-OS-01 | Save compact node resource metrics
+- name: JOB-OS-01 | Add raw data when enabled
   ansible.builtin.set_fact:
-    # os_node_resource_metrics là phần số liệu ngắn gọn cho report.
-    # Nó tránh ghi nguyên output của free/df/ps vào JSON giám sát.
-    os_node_resource_metrics:
-      cpu_count: "{{ os_cpu_count.stdout | int }}"
-      load_1m: "{{ os_loadavg.stdout.split()[0] | default('0') }}"
-      load_5m: "{{ os_loadavg.stdout.split()[1] | default('0') }}"
-      load_15m: "{{ os_loadavg.stdout.split()[2] | default('0') }}"
-      memory_total_mb: "{{ os_memory.stdout_lines[1].split()[1] | int }}"
-      memory_used_mb: "{{ os_memory.stdout_lines[1].split()[2] | int }}"
-      memory_available_mb: "{{ os_memory.stdout_lines[1].split()[6] | int }}"
-      swap_total_mb: "{{ os_memory.stdout_lines[2].split()[1] | int }}"
-      swap_used_mb: "{{ os_memory.stdout_lines[2].split()[2] | int }}"
-      filesystems_count: "{{ (os_filesystems.stdout_lines | length) - 1 }}"
-      readonly_filesystems_count: "{{ os_readonly_filesystems.stdout_lines | length }}"
+    os_job_01_report: >-
+      {{
+        os_job_01_report | combine(
+          {
+            'raw': {
+              'memory': os_memory.stdout_lines | default([]),
+              'filesystems': os_filesystems.stdout_lines | default([]),
+              'inodes': os_inodes.stdout_lines | default([])
+            }
+          },
+          recursive=True
+        )
+      }}
+  changed_when: false
+  when: os_check_include_raw | bool
+
+- name: JOB-OS-01 | Show report
+  ansible.builtin.debug:
+    var: os_job_01_report
+  changed_when: false
+
+- name: JOB-OS-01 | Create local artifact directory
+  ansible.builtin.file:
+    path: "{{ os_check_artifact_dir }}/{{ inventory_hostname }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+
+- name: JOB-OS-01 | Write job report to local artifact
+  ansible.builtin.copy:
+    dest: "{{ os_check_artifact_dir }}/{{ inventory_hostname }}/job_os_01_node_resources.json"
+    content: "{{ os_job_01_report | to_nice_json }}\n"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
   changed_when: false

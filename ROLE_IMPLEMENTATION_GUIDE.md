@@ -312,11 +312,6 @@ os_check_include_raw: false
     - job_os_04
     - os_smart
 
-- name: Save OS check report
-  ansible.builtin.import_tasks: save_report.yml
-  tags:
-    - always
-    - os_report
 ```
 
 **Giải thích:**
@@ -1548,11 +1543,6 @@ k8s_check_include_raw: false
     - job_k8s_03
     - k8s_alerts
 
-- name: Save Kubernetes check report
-  ansible.builtin.import_tasks: save_report.yml
-  tags:
-    - always
-    - k8s_report
 ```
 
 **Lưu ý quan trọng:** JOB-K8S-03 phụ thuộc vào dữ liệu từ JOB-K8S-01 (node conditions, pod list) và JOB-K8S-02 (warning events). Do đó thứ tự chạy phải là 01 → 02 → 03.
@@ -2405,7 +2395,8 @@ nhom tool.
 - Tag cap playbook dung de chay nhom lon: `prepare_tools`, `os`, `kubernetes`, `checks`.
 - Tag cap job dung de chay tung job: `job_os_01`, `job_k8s_01`, ...
 - Tag theo ten nghiep vu dung de doc de hieu hon: `os_resources`, `k8s_events`, `smart_tools`.
-- `save_report.yml` duoc gan tag `always`, nen khi chay rieng mot job, task ghi report van chay.
+- Khong dung `save_report.yml` gom chung nua. Moi job tu ghi file JSON cua chinh no,
+  nen khi chay rieng mot tag thi van co artifact cua dung job do.
 - `prepare_tools` khong tao report JSON. Role nay chi check command, neu thieu thi cai package tuong ung.
 
 ### 10.2 Tags cua prepare_tools
@@ -2443,7 +2434,6 @@ ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
 | `job_os_02` / `os_event_logs` | Chay `JOB-OS-02` - event log OS |
 | `job_os_03` / `os_cron_jobs` | Chay `JOB-OS-03` - cron job OS |
 | `job_os_04` / `os_smart` | Chay `JOB-OS-04` - SMART |
-| `os_report` | Chay phan ghi report OS |
 
 ```bash
 # Chay tat ca job OS
@@ -2468,7 +2458,6 @@ ansible-playbook -i inventories/lab/inventory.ini playbooks/check_os.yml \
 | `job_k8s_01` / `k8s_resources` | Chay `JOB-K8S-01` - tai nguyen cluster |
 | `job_k8s_02` / `k8s_events` | Chay `JOB-K8S-02` - event toan cum |
 | `job_k8s_03` / `k8s_alerts` | Chay `JOB-K8S-03` - alert |
-| `k8s_report` | Chay phan ghi report Kubernetes |
 
 ```bash
 # Chay tat ca job Kubernetes
@@ -2544,3 +2533,51 @@ Khi them mot job moi vao role, them tag ngay tai `tasks/main.yml`:
 
 Neu job co report rieng, dam bao `save_report.yml` doc bien bang `default(...)`
 de khi chay tag rieng cac job khac khong lam report bi loi.
+
+---
+
+## 11. Thiet ke don gian sau refactor
+
+Phien ban moi uu tien de doc va de bao tri hon so voi ban dau.
+
+Nguyen tac moi:
+
+1. Moi job tu thu thap du lieu cua minh.
+2. Moi job tu tao report cua minh, vi du `os_job_01_report` hoac `k8s_job_01_report`.
+3. Khong con `save_report.yml` gom chung; moi job tu ghi artifact JSON cua chinh no.
+4. Report van duoc in truc tiep bang `ansible.builtin.debug` de xem nhanh tren terminal.
+5. Schema report rut gon con:
+
+```yaml
+job: JOB-OS-01
+name: Ten job
+host: cp01
+status: ok | warning | critical | skipped
+message: Cau ket luan ngan gon
+summary: {}
+highlights: {}
+next_actions: []
+raw: {} # chi co khi bat include_raw=true
+```
+
+Loi ich:
+
+- Muon hieu job nao thi mo dung file job do.
+- Khi chay tag rieng, job do van tu tao, in report va ghi file report rieng.
+- Artifact duoc chia theo job de tranh mot file JSON qua dai, kho doc.
+- Output tap trung vao thu nguoi van hanh can doc: ket luan, so lieu chinh, object/process/event can chu y.
+
+Vi du luong cua `JOB-OS-01`:
+
+```text
+read command -> register output -> build os_job_01_report -> debug in terminal -> write artifacts/os/<host>/job_os_01_node_resources.json
+```
+
+Vi du luong cua `JOB-K8S-03`:
+
+```text
+doc bien tu JOB-K8S-01/JOB-K8S-02 neu co -> tao alert -> build k8s_job_03_report
+```
+
+Neu chi chay rieng `job_k8s_03` ma chua co du lieu tu `job_k8s_01` va
+`job_k8s_02`, job se tra `skipped` thay vi fail.

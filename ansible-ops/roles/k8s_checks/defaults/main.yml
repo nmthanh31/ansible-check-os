@@ -10,5 +10,5 @@ k8s_check_memory_request_warning_percent: 80
 k8s_check_memory_request_critical_percent: 90
 k8s_check_warning_event_repeat_threshold: 3
 k8s_check_alertmanager_url: ""
-k8s_check_artifact_dir: "{{ playbook_dir }}/../artifacts"
 k8s_check_include_raw: false
+k8s_check_artifact_dir: "{{ playbook_dir }}/../artifacts/k8s"

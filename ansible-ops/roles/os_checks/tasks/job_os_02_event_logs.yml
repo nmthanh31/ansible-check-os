@@ -1,105 +1,127 @@
 ---
-# JOB-OS-02 - Kiểm tra event log OS.
-#
-# File này đọc log hệ điều hành để phát hiện lỗi kernel, service, disk,
-# filesystem, network, OOM, containerd/kubelet và authentication.
-# Các task chỉ đọc log, không sửa cấu hình.
+# JOB-OS-02 - Kiem tra event log OS.
 
-- name: JOB-OS-02 | Initialize event log result
-  ansible.builtin.set_fact:
-    # os_event_log_raw lưu dữ liệu log thô.
-    os_event_log_raw: {}
-
-    # os_event_log_findings sau này dùng để lưu warning/critical đã parse.
-    os_event_log_findings: []
-  changed_when: false
-
-- name: JOB-OS-02 | Read kernel errors
-  ansible.builtin.command:
-    # journalctl:
-    # - Công cụ đọc systemd journal.
-    #
-    # -k:
-    # - Chỉ đọc kernel messages, tương đương log từ kernel ring buffer.
-    #
-    # --since "{{ os_check_log_since }}":
-    # - Chỉ lấy log từ mốc thời gian cấu hình.
-    # - Mặc định biến này đang là "24 hours ago" trong defaults/main.yml.
-    #
-    # --priority=warning..alert:
-    # - Lọc severity từ warning đến alert.
-    # - Giảm nhiễu so với đọc toàn bộ kernel log.
-    #
-    # --no-pager:
-    # - Không mở pager như less, tránh task bị treo khi chạy non-interactive.
-    cmd: journalctl -k --since "{{ os_check_log_since }}" --priority=warning..alert --no-pager
+- name: JOB-OS-02 | Read kernel warnings/errors
+  ansible.builtin.shell: |
+    journalctl -k --since "{{ os_check_log_since }}" --priority=warning..alert --no-pager --quiet \
+      | grep -Ev '^-- No entries --$|^\s*$' \
+      || true
+  args:
+    executable: /bin/bash
   register: os_kernel_errors
   changed_when: false
-
-  # Một số hệ tối giản có thể không có journal hoặc không có quyền đọc đầy đủ.
-  # Lỗi này không nên làm chết toàn bộ job; raw sẽ ghi stdout/stderr để xử lý sau.
   failed_when: false
 
 - name: JOB-OS-02 | Read failed systemd services
-  ansible.builtin.command:
-    # systemctl --failed:
-    # - Liệt kê unit systemd đang ở trạng thái failed.
-    #
-    # --no-pager:
-    # - Không mở pager, tránh bị đứng terminal.
-    #
-    # --plain:
-    # - Output đơn giản hơn, không có ký tự trang trí.
-    cmd: systemctl --failed --no-pager --plain
-  register: os_failed_services
-  changed_when: false
-
-  # systemctl có thể trả rc khác 0 khi không có unit failed hoặc môi trường
-  # systemd không đầy đủ. Không fail playbook ở bước thu thập.
-  failed_when: false
-
-- name: JOB-OS-02 | Read OS error patterns
   ansible.builtin.shell: |
-    # journalctl --since "{{ os_check_log_since }}" --no-pager:
-    # - Đọc toàn bộ journal trong khoảng thời gian cấu hình.
-    # - Không dùng -k vì cần cả log service/application.
-    #
-    # grep -Ei:
-    # - -E dùng extended regex.
-    # - -i không phân biệt hoa thường.
-    #
-    # Các pattern:
-    # - I/O error, disk error: lỗi đọc/ghi disk.
-    # - filesystem error, read-only file system: lỗi filesystem hoặc bị remount ro.
-    # - oom-killer: kernel kill process do thiếu RAM.
-    # - segfault: process crash do segmentation fault.
-    # - link is down: network link down.
-    # - authentication failure: lỗi đăng nhập/xác thực.
-    # - containerd, kubelet: lỗi runtime/Kubernetes node agent.
-    #
-    # || true:
-    # - grep trả rc=1 khi không match dòng nào.
-    # - Thêm || true để "không tìm thấy lỗi" vẫn là kết quả ok.
-    journalctl --since "{{ os_check_log_since }}" --no-pager \
-      | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|containerd|kubelet' \
+    systemctl --failed --no-legend --no-pager --plain \
+      | awk 'NF {print}' \
       || true
   args:
-    # Cần shell vì có pipe và toán tử ||.
+    executable: /bin/bash
+  register: os_failed_services
+  changed_when: false
+  failed_when: false
+
+- name: JOB-OS-02 | Read important OS error patterns
+  ansible.builtin.shell: |
+    journalctl --since "{{ os_check_log_since }}" --priority=warning..alert --no-pager --quiet \
+      | grep -Ei 'I/O error|disk error|filesystem error|read-only file system|oom-killer|segfault|link is down|authentication failure|failed|failure|error|critical' \
+      | grep -Evi 'ansible|sudo:.*ansible|Deactivated successfully|Consumed [0-9.]+s CPU time' \
+      || true
+  args:
     executable: /bin/bash
   register: os_error_patterns
   changed_when: false
   failed_when: false
 
-- name: JOB-OS-02 | Save raw event log result
+- name: JOB-OS-02 | Prepare report helper values
   ansible.builtin.set_fact:
-    os_event_log_raw:
-      # stdout_lines giúp downstream xử lý theo từng dòng log.
-      kernel_errors: "{{ os_kernel_errors.stdout_lines }}"
-      failed_services: "{{ os_failed_services.stdout_lines }}"
-      error_patterns: "{{ os_error_patterns.stdout_lines }}"
+    os_log_highlight_limit: "{{ os_check_log_highlight_limit | int }}"
+  changed_when: false
 
-      # stderr_lines giữ lại lỗi đọc log nếu có, ví dụ thiếu quyền hoặc journal lỗi.
-      kernel_errors_stderr: "{{ os_kernel_errors.stderr_lines | default([]) }}"
-      failed_services_stderr: "{{ os_failed_services.stderr_lines | default([]) }}"
-      error_patterns_stderr: "{{ os_error_patterns.stderr_lines | default([]) }}"
+- name: JOB-OS-02 | Build report
+  ansible.builtin.set_fact:
+    os_job_02_report:
+      job: JOB-OS-02
+      name: Kiem tra event log OS
+      host: "{{ inventory_hostname }}"
+      status: >-
+        {{
+          'warning'
+          if ((os_kernel_errors.stdout_lines | default([]) | length) > 0
+              or (os_failed_services.stdout_lines | default([]) | length) > 0
+              or (os_error_patterns.stdout_lines | default([]) | length) > 0)
+          else 'ok'
+        }}
+      message: >-
+        {{
+          'WARNING - OS co kernel log/service/error pattern can xem'
+          if ((os_kernel_errors.stdout_lines | default([]) | length) > 0
+              or (os_failed_services.stdout_lines | default([]) | length) > 0
+              or (os_error_patterns.stdout_lines | default([]) | length) > 0)
+          else 'OK - khong thay OS event bat thuong'
+        }}
+      summary:
+        kernel_warnings_errors: "{{ os_kernel_errors.stdout_lines | default([]) | length }}"
+        failed_services: "{{ os_failed_services.stdout_lines | default([]) | length }}"
+        matched_error_logs: "{{ os_error_patterns.stdout_lines | default([]) | length }}"
+        shown_limit: "{{ os_log_highlight_limit }}"
+      highlights:
+        kernel_warnings_errors: "{{ (os_kernel_errors.stdout_lines | default([]))[:os_log_highlight_limit] }}"
+        failed_services: "{{ (os_failed_services.stdout_lines | default([]))[:os_log_highlight_limit] }}"
+        matched_error_logs: "{{ (os_error_patterns.stdout_lines | default([]))[:os_log_highlight_limit] }}"
+        truncated:
+          kernel_warnings_errors: "{{ (os_kernel_errors.stdout_lines | default([]) | length) > os_log_highlight_limit }}"
+          failed_services: "{{ (os_failed_services.stdout_lines | default([]) | length) > os_log_highlight_limit }}"
+          matched_error_logs: "{{ (os_error_patterns.stdout_lines | default([]) | length) > os_log_highlight_limit }}"
+      next_actions: >-
+        {{
+          ['Kiem tra highlights.failed_services va highlights.matched_error_logs. Neu truncated=true thi chay lai voi -e os_check_include_raw=true.']
+          if ((os_kernel_errors.stdout_lines | default([]) | length) > 0
+              or (os_failed_services.stdout_lines | default([]) | length) > 0
+              or (os_error_patterns.stdout_lines | default([]) | length) > 0)
+          else ['Khong can hanh dong.']
+        }}
+  changed_when: false
+
+- name: JOB-OS-02 | Add raw data when enabled
+  ansible.builtin.set_fact:
+    os_job_02_report: >-
+      {{
+        os_job_02_report | combine(
+          {
+            'raw': {
+              'kernel_errors': os_kernel_errors.stdout_lines | default([]),
+              'failed_services': os_failed_services.stdout_lines | default([]),
+              'error_patterns': os_error_patterns.stdout_lines | default([])
+            }
+          },
+          recursive=True
+        )
+      }}
+  changed_when: false
+  when: os_check_include_raw | bool
+
+- name: JOB-OS-02 | Show report
+  ansible.builtin.debug:
+    var: os_job_02_report
+  changed_when: false
+
+- name: JOB-OS-02 | Create local artifact directory
+  ansible.builtin.file:
+    path: "{{ os_check_artifact_dir }}/{{ inventory_hostname }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+
+- name: JOB-OS-02 | Write job report to local artifact
+  ansible.builtin.copy:
+    dest: "{{ os_check_artifact_dir }}/{{ inventory_hostname }}/job_os_02_event_logs.json"
+    content: "{{ os_job_02_report | to_nice_json }}\n"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
   changed_when: false
