@@ -12,3 +12,7 @@
   tags:
     - kubernetes
     - checks
+
+- import_playbook: format_report.yml
+  tags:
+    - report

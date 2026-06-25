@@ -23,10 +23,13 @@ Inventory
         -> JOB-K8S-02: Kiem tra event toan cum
         -> JOB-K8S-03: Kiem tra va tao canh bao
   -> terminal output + artifacts/
+  -> scripts/format_reports.py
+     -> artifacts/report.md
 ```
 
 `check_*` chi doc du lieu, in report ngan ra terminal va ghi JSON report theo tung job
-vao `artifacts/`, khong thay doi cau hinh he thong.
+vao `artifacts/`, khong thay doi cau hinh he thong. Sau khi chay `check_all.yml`,
+file bao cao de doc duoc tao tai `artifacts/report.md`.
 Rieng `prepare_tools.yml` co the cai package thieu, nen duoc tach rieng va chay
 co chu dich truoc khi kiem tra.
 
@@ -39,10 +42,13 @@ co chu dich truoc khi kiem tra.
 | `playbooks/check_kubernetes.yml` | Chay cac job Kubernetes |
 | `playbooks/check_all.yml` | Chay toan bo job kiem tra OS va Kubernetes |
 
-`check_kubernetes.yml` chi chay tren node dau tien cua group
-`kubernetes_control_plane`, vi chi control-plane moi co `kubectl`/kubeconfig de
-goi Kubernetes API. Cac worker chi duoc truy van qua task delegate khi can du lieu
-runtime nhu `crictl stats`.
+`check_kubernetes.yml` chay tren node dau tien cua group
+`kubernetes_control_plane`, vi control-plane co `kubectl`/kubeconfig de goi
+Kubernetes API. Mac dinh role dung:
+
+```text
+/var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml
+```
 
 ## Prepare tools
 
@@ -52,6 +58,22 @@ Chay playbook nay neu job bi skip vi thieu cong cu, vi du `smartctl` cho SMART:
 ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_ROLES_PATH=roles \
 ansible-playbook -i inventories/lab/inventory.ini playbooks/prepare_tools.yml \
 --ask-vault-pass -v
+```
+
+Neu chay trong WSL tu thu muc `/mnt/c` hoac `/mnt/d`, Ansible co the bo qua
+`ansible.cfg` vi thu muc bi xem la world-writable. Khi do truyen ro config va
+inventory:
+
+```bash
+ANSIBLE_CONFIG="$PWD/ansible.cfg" \
+ansible-playbook -i inventories/lab/inventory.ini playbooks/check_all.yml \
+--ask-vault-pass
+```
+
+Sau khi chay xong, doc bao cao tong hop tai:
+
+```text
+artifacts/report.md
 ```
 
 Neu chi muon chay cac task check command, khong cai package:
@@ -81,8 +103,12 @@ ansible-ops/
 |   |-- prepare_tools.yml
 |   |-- check_all.yml
 |   |-- check_os.yml
-|   `-- check_kubernetes.yml
+|   |-- check_kubernetes.yml
+|   `-- format_report.yml
+|-- scripts/
+|   `-- format_reports.py
 |-- artifacts/
+|   |-- report.md
 |   |-- os/
 |   |   `-- <host>/
 |   |       |-- job_os_01_node_resources.json

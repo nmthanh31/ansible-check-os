@@ -6,6 +6,7 @@
 | `check_all.yml` | Chay toan bo job kiem tra OS va Kubernetes |
 | `check_os.yml` | Chay `JOB-OS-01` den `JOB-OS-04` |
 | `check_kubernetes.yml` | Chay `JOB-K8S-01` den `JOB-K8S-03` |
+| `format_report.yml` | Tao `artifacts/report.md` tu JSON artifacts |
 
 ## Ghi chu
 
@@ -13,9 +14,9 @@
   thieu nhu `smartmontools`.
 - `check_os.yml` chay tren group `kubernetes_servers`.
 - `check_kubernetes.yml` chay tu node dau tien trong group
-  `kubernetes_control_plane` de goi Kubernetes API hoac `kubectl`.
-- Cac worker khong chay `kubectl`; khi can du lieu runtime, role co the delegate
-  task nhu `crictl stats` sang tung node trong `kubernetes_servers`.
+  `kubernetes_control_plane` de goi Kubernetes API bang `kubectl`.
+- `format_report.yml` chay local va tao file bao cao de doc tai
+  `artifacts/report.md`.
 
 ## Lenh chay
 
